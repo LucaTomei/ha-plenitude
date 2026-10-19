@@ -74,6 +74,9 @@ async def _importa(hass: HomeAssistant, conto: Conto) -> None:
     statistic_id = id_statistica(conto)
     mesi = [(_inizio_mese(c.mese), c.valore) for c in conto.consumi]
     recorder = get_instance(hass)
+    # un'importazione precedente ancora in coda (es. due aggiornamenti ravvicinati) va
+    # scritta prima di leggere le somme, altrimenti si ripartirebbe da dati vecchi
+    await recorder.async_block_till_done()
 
     ultima = await recorder.async_add_executor_job(
         get_last_statistics, hass, 1, statistic_id, True, {"sum"}

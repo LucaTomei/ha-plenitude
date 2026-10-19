@@ -2,6 +2,14 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.3.1] - 2026-10-19
+
+### Correzioni
+
+- Storico dei consumi nel pannello Energia: con due aggiornamenti molto ravvicinati
+  (ad esempio all'avvio e subito dopo il download dei PDF) la somma di un mese poteva
+  restare a un valore vecchio.
+
 ## [0.3.0] - 2026-10-19
 
 ### Novità

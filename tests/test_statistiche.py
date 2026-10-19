@@ -116,3 +116,20 @@ async def test_mese_non_piu_riportato(recorder_mock: Recorder, hass: HomeAssista
     )
     await statistiche.importa_consumi(hass, {"g": _conto({(2026, 1): 100, (2026, 2): 90})})
     assert await _somme(hass) == [("2026-01", 100), ("2026-02", 190), ("2026-03", 190)]
+
+
+async def test_importazioni_ravvicinate(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """Due importazioni una dopo l'altra, senza attese: la seconda vede la prima."""
+    for _ in range(3):
+        await statistiche.importa_consumi(
+            hass, {"g": _conto({(2026, 1): 100, (2026, 2): 80, (2026, 3): 5})}
+        )
+        await statistiche.importa_consumi(
+            hass, {"g": _conto({(2026, 2): 80, (2026, 3): 20, (2026, 4): 10})}
+        )
+    assert await _somme(hass) == [
+        ("2026-01", 100),
+        ("2026-02", 180),
+        ("2026-03", 200),
+        ("2026-04", 210),
+    ]
