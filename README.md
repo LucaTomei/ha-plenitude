@@ -20,10 +20,20 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/LucaTomei/ha-plenitude?style=flat-square" alt="Licenza MIT"></a>
 </p>
 
-<p align="center">
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=LucaTomei&repository=ha-plenitude&category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Apri in HACS"></a>
-  <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=plenitude"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Aggiungi l'integrazione"></a>
-</p>
+## 🚀 Installazione in 3 click
+
+| | Click | Cosa succede |
+|:---:|:---:|---|
+| **1** | [![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LucaTomei&repository=ha-plenitude&category=integration) | Si apre HACS nel tuo Home Assistant: conferma l'aggiunta del repository, poi **Scarica**. |
+| **2** | [![Riavvia Home Assistant](https://my.home-assistant.io/badges/server_controls.svg)](https://my.home-assistant.io/redirect/server_controls/) | **Riavvia** Home Assistant, così carica l'integrazione appena scaricata. |
+| **3** | [![Aggiungi l'integrazione](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=plenitude) | Si apre la configurazione di **Plenitude**: scegli *Account Plenitude* e accedi. |
+
+> [!WARNING]
+> Il pulsante **3** funziona solo dopo i passi 1 e 2. Se Home Assistant risponde
+> *"Questa integrazione non supporta la configurazione tramite l'interfaccia utente"*,
+> l'integrazione non è ancora scaricata o Home Assistant non è stato riavviato.
+
+<sub>I pulsanti usano <a href="https://my.home-assistant.io">My Home Assistant</a>: la prima volta ti chiede l'indirizzo del tuo Home Assistant.</sub>
 
 ---
 
@@ -86,6 +96,7 @@ flowchart LR
 
 ## 📚 Indice
 
+- [Installazione in 3 click](#-installazione-in-3-click)
 - [Requisiti](#-requisiti)
 - [Installazione](#-installazione)
 - [Configurazione](#%EF%B8%8F-configurazione)
@@ -109,9 +120,8 @@ flowchart LR
 
 ### HACS (consigliata)
 
-[![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LucaTomei&repository=ha-plenitude&category=integration)
-
-Oppure a mano:
+Il modo più rapido è l'[installazione in 3 click](#-installazione-in-3-click). Senza i
+pulsanti:
 
 1. HACS → tre puntini in alto a destra → **Repository personalizzati**.
 2. Repository `https://github.com/LucaTomei/ha-plenitude`, tipo **Integrazione**, **Aggiungi**.
@@ -124,6 +134,7 @@ estrailo in `config/custom_components/plenitude` e riavvia Home Assistant.
 
 ## ⚙️ Configurazione
 
+Dopo installazione e riavvio:
 [![Aggiungi l'integrazione](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=plenitude)
 
 Oppure **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione → Plenitude**, poi
@@ -284,6 +295,7 @@ l'integrazione riprova da sola senza chiederti nulla.
 
 | Problema | Soluzione |
 |---|---|
+| *"Questa integrazione non supporta la configurazione tramite l'interfaccia utente"* | L'integrazione non è installata o Home Assistant non è stato riavviato: fai i passi 1 e 2 dell'[installazione](#-installazione-in-3-click). |
 | *Email o password errate* | Usa le stesse credenziali dell'app Plenitude. |
 | Il codice non arriva | Controlla lo spam, poi spunta *Invia un nuovo codice*. |
 | *La verifica è scaduta* | Chiudi la finestra e ricomincia l'aggiunta dell'integrazione. |
