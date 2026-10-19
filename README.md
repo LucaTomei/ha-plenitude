@@ -1,74 +1,117 @@
 <p align="center">
-  <img src="custom_components/plenitude/brand/logo.png" alt="Plenitude" height="64">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/plenitude/brand/dark_logo.png">
+    <img src="custom_components/plenitude/brand/logo.png" alt="Plenitude" height="72">
+  </picture>
 </p>
 
 <h1 align="center">Plenitude per Home Assistant</h1>
 
 <p align="center">
-  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS Custom"></a>
-  <a href="https://github.com/LucaTomei/ha-plenitude/releases"><img src="https://img.shields.io/github/v/release/LucaTomei/ha-plenitude" alt="Release"></a>
-  <a href="https://github.com/LucaTomei/ha-plenitude/actions/workflows/validazione.yml"><img src="https://github.com/LucaTomei/ha-plenitude/actions/workflows/validazione.yml/badge.svg" alt="Validazione"></a>
-  <img src="https://img.shields.io/badge/Home%20Assistant-2025.11%2B-03A9F4" alt="Home Assistant 2025.11+">
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/LucaTomei/ha-plenitude" alt="Licenza MIT"></a>
+  <b>Bollette, consumi e letture di luce e gas del tuo account Eni Plenitude,<br>
+  direttamente in Home Assistant e nel pannello Energia.</b>
 </p>
 
-Porta in Home Assistant i dati del tuo account **Eni Plenitude**, luce e gas: bollette
-(importo, scadenza, da pagare), consumi mese per mese, lettura del contatore gas e storico
-dei consumi nel pannello Energia. I prezzi del gas letti dalle bollette vengono passati
-all'integrazione [MyItalgas](https://github.com/LucaTomei/ha-myitalgas) per stimare la spesa
-con gli scaglioni e le quote fisse reali.
+<p align="center">
+  <a href="https://github.com/LucaTomei/ha-plenitude/releases"><img src="https://img.shields.io/github/v/release/LucaTomei/ha-plenitude?style=flat-square&color=00A651" alt="Release"></a>
+  <a href="https://github.com/LucaTomei/ha-plenitude/actions/workflows/validazione.yml"><img src="https://img.shields.io/github/actions/workflow/status/LucaTomei/ha-plenitude/validazione.yml?branch=main&style=flat-square&label=validazione" alt="Validazione"></a>
+  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5?style=flat-square" alt="HACS Custom"></a>
+  <img src="https://img.shields.io/badge/Home%20Assistant-2025.11%2B-03A9F4?style=flat-square&logo=homeassistant&logoColor=white" alt="Home Assistant 2025.11+">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/LucaTomei/ha-plenitude?style=flat-square" alt="Licenza MIT"></a>
+</p>
 
-Due modi di usarla:
-
-- **Account Plenitude** (consigliato): accedi con email e password dell'app e il codice di
-  verifica che ricevi per email. Tutto viene letto e aggiornato da solo, comprese le
-  bollette PDF.
-- **Cartella di PDF**: metti le bollette gas in una cartella (a mano o con
-  un'automazione). Nessun accesso all'account.
-
-```
-  account Plenitude ──▶ bollette, consumi, letture ──▶ sensori + pannello Energia
-         │
-         └──▶ PDF bollette gas ──▶ prezzi per scaglione + quota fissa ──▶ MyItalgas
-```
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=LucaTomei&repository=ha-plenitude&category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Apri in HACS"></a>
+  <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=plenitude"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Aggiungi l'integrazione"></a>
+</p>
 
 ---
 
-## Indice
+## ✨ In breve
 
-- [Cosa ottieni](#cosa-ottieni)
-- [Requisiti](#requisiti)
-- [Installazione](#installazione)
-- [Configurazione](#configurazione)
-- [Entità](#entità)
-- [Pannello Energia](#pannello-energia)
-- [Collegamento con MyItalgas](#collegamento-con-myitalgas)
-- [Bollette da cartella](#bollette-da-cartella)
-- [Come funziona l'accesso](#come-funziona-laccesso)
-- [Privacy](#privacy)
-- [Risoluzione dei problemi](#risoluzione-dei-problemi)
-- [Sviluppo](#sviluppo)
-- [Note legali](#note-legali)
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🧾 Bollette</h3>
+      Importo, emissione e scadenza dell'ultima bolletta, stato del pagamento, totale e
+      numero di bollette ancora <b>da pagare</b>, per luce e gas.
+    </td>
+    <td width="50%" valign="top">
+      <h3>📈 Consumi</h3>
+      Consumo dell'ultimo mese e degli ultimi 12 mesi, in kWh per la luce (anche per fascia
+      <b>F1/F2/F3</b>) e in Smc per il gas.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>⚡ Pannello Energia</h3>
+      Storico dei consumi mensili <b>dall'attivazione della fornitura</b>, pronto da
+      aggiungere come consumo dalla rete (luce) e consumo di gas.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔥 Gas e MyItalgas</h3>
+      Lettura del contatore, prossima autolettura e <b>prezzi reali</b> per scaglione e
+      quota fissa, letti dalle bollette e passati a
+      <a href="https://github.com/LucaTomei/ha-myitalgas">MyItalgas</a>.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🔐 Accesso sicuro</h3>
+      Email, password e codice di verifica via email, come nell'app. La password
+      <b>non viene salvata</b>; la sessione dura un anno e sopravvive ai riavvii.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔄 Tutto automatico</h3>
+      Nuove bollette, nuove forniture e PDF scaricati da soli. Se la sessione scade,
+      Home Assistant ti chiede di <b>riautenticarti</b>.
+    </td>
+  </tr>
+</table>
 
-## Cosa ottieni
+```mermaid
+flowchart LR
+    A["👤 Account Plenitude"] --> B["🧾 Bollette<br/>📈 Consumi<br/>🔢 Letture"]
+    B --> C["📊 Sensori"]
+    B --> D["⚡ Pannello Energia"]
+    A --> E["📄 PDF bollette gas"]
+    F["📁 Cartella di PDF"] -.-> E
+    E --> G["💶 Prezzi per scaglione<br/>+ quota fissa"]
+    G --> H["MyItalgas"]
+```
 
-- **Per ogni fornitura (luce e gas)**: importo, emissione e scadenza dell'ultima bolletta,
-  stato del pagamento, totale e numero di bollette **da pagare**, consumo dell'ultimo mese
-  (per la luce anche per fascia F1/F2/F3) e degli ultimi 12 mesi.
-- **Gas**: lettura del contatore, prossima finestra di autolettura, consumo annuo e prezzi
-  ricavati dal dettaglio delle bollette (tre scaglioni annui e quota fissa, IVA inclusa).
-- **Storico dei consumi** nel pannello Energia, dall'attivazione della fornitura.
-- Le nuove forniture dell'account compaiono da sole.
+> [!TIP]
+> Non vuoi collegare l'account? Puoi anche solo mettere le bollette gas in PDF in una
+> cartella: vedi [Bollette da cartella](#-bollette-da-cartella).
 
-## Requisiti
+## 📚 Indice
 
-- **Home Assistant 2025.11 o successivo.**
-- Un account Plenitude (lo stesso dell'app), oppure le bollette gas in PDF.
+- [Requisiti](#-requisiti)
+- [Installazione](#-installazione)
+- [Configurazione](#%EF%B8%8F-configurazione)
+- [Entità](#-entità)
+- [Pannello Energia](#-pannello-energia)
+- [Collegamento con MyItalgas](#-collegamento-con-myitalgas)
+- [Bollette da cartella](#-bollette-da-cartella)
+- [Come funziona l'accesso](#-come-funziona-laccesso)
+- [Privacy](#%EF%B8%8F-privacy)
+- [Risoluzione dei problemi](#-risoluzione-dei-problemi)
+- [Sviluppo](#%EF%B8%8F-sviluppo)
+- [Note legali](#%EF%B8%8F-note-legali)
+
+## 📋 Requisiti
+
+- **Home Assistant 2025.11** o successivo.
+- Un account **Plenitude** (lo stesso dell'app), oppure le bollette gas in PDF.
 - Facoltativo: l'integrazione **MyItalgas** configurata sulla stessa fornitura gas.
 
-## Installazione
+## 📦 Installazione
 
 ### HACS (consigliata)
+
+[![Apri in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=LucaTomei&repository=ha-plenitude&category=integration)
+
+Oppure a mano:
 
 1. HACS → tre puntini in alto a destra → **Repository personalizzati**.
 2. Repository `https://github.com/LucaTomei/ha-plenitude`, tipo **Integrazione**, **Aggiungi**.
@@ -76,23 +119,28 @@ Due modi di usarla:
 
 ### Manuale
 
-Scarica l'ultima release, copia la cartella `custom_components/plenitude` in
-`config/custom_components/` e riavvia Home Assistant.
+Scarica `plenitude.zip` dall'[ultima release](https://github.com/LucaTomei/ha-plenitude/releases/latest),
+estrailo in `config/custom_components/plenitude` e riavvia Home Assistant.
 
-## Configurazione
+## ⚙️ Configurazione
 
-**Impostazioni → Dispositivi e servizi → + Aggiungi integrazione → Plenitude**, poi scegli:
+[![Aggiungi l'integrazione](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=plenitude)
 
-**Account Plenitude**
+Oppure **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione → Plenitude**, poi
+scegli **Account Plenitude**:
 
-1. Inserisci email e password dell'app Plenitude.
-2. Plenitude ti invia per email un codice di 6 cifre: inseriscilo. Se non arriva, spunta
-   *Invia un nuovo codice*.
-3. Scegli l'intervallo di aggiornamento e, se vuoi, la fornitura MyItalgas da aggiornare.
+| Passo | Cosa fare |
+|:---:|---|
+| 1️⃣ | Inserisci **email e password** dell'app Plenitude. |
+| 2️⃣ | Inserisci il **codice di 6 cifre** che Plenitude ti invia per email. Non arriva? Spunta *Invia un nuovo codice*. |
+| 3️⃣ | Scegli **ogni quante ore** aggiornare e, se vuoi, la **fornitura MyItalgas** da aggiornare con i prezzi. |
 
-Puoi aggiungere più account. La password non viene salvata.
+Fatto: dopo pochi secondi compaiono i dispositivi **Plenitude Luce** e **Plenitude Gas**;
+i PDF delle bollette gas si scaricano in background nei minuti successivi.
 
-**Cartella di PDF**: vedi [Bollette da cartella](#bollette-da-cartella).
+> [!NOTE]
+> Puoi aggiungere più account Plenitude. La password serve solo per l'accesso e non viene
+> salvata.
 
 Le opzioni si cambiano in seguito da **Configura**:
 
@@ -100,96 +148,139 @@ Le opzioni si cambiano in seguito da **Configura**:
 |---|---|
 | Intervallo di aggiornamento | Ogni quante ore aggiornare i dati (1–168, predefinito 12). |
 | Fornitura gas MyItalgas | Facoltativa: la fornitura MyItalgas a cui inviare i prezzi del gas. |
-| Conto gas collegato a MyItalgas | Solo se l'account ha più forniture gas. |
+| Conto gas collegato a MyItalgas | Compare solo se l'account ha più forniture gas. |
 | Cartella delle bollette | Solo per le bollette da cartella. |
 
-## Entità
+## 📊 Entità
 
-Con l'account, un dispositivo **Plenitude** per l'account e uno per ogni fornitura
-(**Plenitude Gas**, **Plenitude Luce**):
+Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fornitura
+(**Plenitude Luce**, **Plenitude Gas**).
 
-| Entità | Forniture | Descrizione |
-|---|---|---|
-| Importo ultima bolletta | luce, gas | € dell'ultima bolletta; negli attributi numero, scadenza, stato e metodo di pagamento |
-| Scadenza ultima bolletta | luce, gas | Data di scadenza |
-| Emissione ultima bolletta | luce, gas | Data di emissione |
-| Da pagare | luce, gas | Totale ancora da pagare; negli attributi le bollette e la prossima scadenza |
-| Bollette da pagare | luce, gas | Quante bollette hanno un importo da pagare |
-| Consumo ultimo mese | luce, gas | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
-| Consumo ultimi 12 mesi | luce, gas | kWh o Smc degli ultimi 12 mesi completi |
-| Lettura contatore | gas | Ultima lettura (m³), con la data |
-| Prossima autolettura | gas | Inizio della prossima finestra per l'autolettura |
-| Consumo annuo | gas | Smc dell'anno, come riportato nell'ultima bolletta |
-| Bollette lette | gas | Diagnostica: bollette PDF lette e periodi tariffari ricavati |
-| Ultimo aggiornamento | account | Diagnostica: ultima lettura riuscita |
+| Entità | 💡 Luce | 🔥 Gas | Descrizione |
+|---|:---:|:---:|---|
+| Importo ultima bolletta | ✅ | ✅ | € dell'ultima bolletta; negli attributi numero, scadenza, stato e metodo di pagamento |
+| Scadenza ultima bolletta | ✅ | ✅ | Data di scadenza |
+| Emissione ultima bolletta | ✅ | ✅ | Data di emissione |
+| Da pagare | ✅ | ✅ | Totale ancora da pagare; negli attributi le bollette e la prossima scadenza |
+| Bollette da pagare | ✅ | ✅ | Quante bollette hanno un importo da pagare |
+| Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
+| Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
+| Lettura contatore | | ✅ | Ultima lettura (m³), con la data |
+| Prossima autolettura | | ✅ | Inizio della prossima finestra per l'autolettura |
+| Consumo annuo | | ✅ | Smc dell'anno, come riportato nell'ultima bolletta |
+| Bollette lette | | ✅ | Diagnostica: bollette PDF lette e periodi tariffari ricavati |
+| Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
 
-Con la cartella di PDF: *Importo*, *Scadenza* e *Consumo* dell'ultima bolletta, *Consumo
-annuo*, *Bollette lette* e *Ultimo aggiornamento*.
+<details>
+<summary><b>Esempio di automazione: avviso per una bolletta da pagare</b></summary>
 
-## Pannello Energia
+```yaml
+automation:
+  - alias: "Plenitude: bolletta luce da pagare"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.plenitude_luce_da_pagare
+        above: 0
+    actions:
+      - action: notify.notify
+        data:
+          title: "Bolletta luce da pagare"
+          message: >
+            {{ states('sensor.plenitude_luce_da_pagare') }} € entro il
+            {{ state_attr('sensor.plenitude_luce_da_pagare', 'prossima_scadenza') }}
+```
+
+Gli identificativi delle entità dipendono dalla lingua di Home Assistant: controllali in
+**Impostazioni → Dispositivi e servizi → Plenitude**.
+
+</details>
+
+<details>
+<summary><b>Entità con le bollette da cartella</b></summary>
+
+*Importo*, *Scadenza* e *Consumo* dell'ultima bolletta, *Consumo annuo*, *Bollette lette*
+e *Ultimo aggiornamento*.
+
+</details>
+
+## ⚡ Pannello Energia
 
 Con l'account, lo storico dei consumi mensili di ogni fornitura viene importato come
-statistica esterna:
+statistica esterna, da aggiungere in **Impostazioni → Pannelli → Energia**:
 
-- `plenitude:consumo_luce_<conto>` in kWh → **Consumo dalla rete**;
-- `plenitude:consumo_gas_<conto>` in m³ → **Consumo di gas**.
+| Statistica | Unità | Dove aggiungerla |
+|---|:---:|---|
+| `plenitude:consumo_luce_<conto>` | kWh | **Rete elettrica → Consumo dalla rete** |
+| `plenitude:consumo_gas_<conto>` | m³ | **Consumo di gas** |
 
-Aggiungile da **Impostazioni → Pannelli → Energia**. I valori sono mensili (registrati
-all'inizio di ogni mese, con lo storico dall'attivazione della fornitura): vanno guardati
-per mese o per anno. Il mese in corso e i due precedenti vengono aggiornati a ogni
-lettura, così le stime vengono sostituite dai consumi reali.
+I valori sono **mensili** (registrati all'inizio di ogni mese, con lo storico
+dall'attivazione della fornitura): guardali per mese o per anno. Il mese in corso e i
+due precedenti vengono aggiornati a ogni lettura, così le stime vengono sostituite dai
+consumi reali.
 
-Per il gas puoi usare in alternativa il sensore *Lettura contatore* (m³, totale
-crescente): scegli **uno solo** dei due, altrimenti i consumi vengono contati due volte.
-Se hai MyItalgas, i consumi giornalieri del contatore sono più precisi: in quel caso usa
-MyItalgas per il gas e Plenitude per i prezzi.
+> [!IMPORTANT]
+> Per il gas puoi usare in alternativa il sensore **Lettura contatore** (m³, totale
+> crescente): scegli **uno solo** dei due, altrimenti i consumi vengono contati due volte.
+> Se hai MyItalgas, i suoi consumi giornalieri sono più precisi: in quel caso usa
+> MyItalgas per il gas e Plenitude per i prezzi.
 
-## Collegamento con MyItalgas
+## 🔗 Collegamento con MyItalgas
 
 Se scegli una **fornitura MyItalgas** nelle opzioni, a ogni aggiornamento Plenitude crea
 o aggiorna in MyItalgas i **periodi tariffari** del gas: un periodo per ogni mese presente
 nelle bollette, con i tre prezzi per scaglione e la quota fissa, IVA inclusa. Così il
 sensore *Costo stimato* e la statistica dei costi di MyItalgas usano i prezzi reali.
 
-Il prezzo dello scaglione effettivamente consumato in ogni mese è preso esattamente dalla
-bolletta; per gli altri scaglioni, quando la bolletta non li riporta (perché non
-raggiunti), il prezzo è stimato dal valore noto più vicino.
+<details>
+<summary><b>Come vengono calcolati i prezzi</b></summary>
 
-Con l'account, i PDF delle ultime 24 bollette gas vengono scaricati in
-`config/plenitude/archivio/<conto>/` (una volta sola) e letti da lì.
+- Le bollette riportano le tariffe per lo **scaglione annuo di consumo** raggiunto in ogni
+  mese (fino a 120, 121–480, oltre 480 Smc): quel prezzo è preso esattamente dalla bolletta.
+- Per gli scaglioni non raggiunti si usa il valore noto più vicino.
+- Oltre 480 Smc/anno l'IVA passa dal 10% al 22%.
+- Quando una bolletta rifattura mesi già fatturati (conguaglio con le letture reali),
+  valgono le voci della bolletta più recente.
+- Vengono lette sia le bollette attuali sia quelle nel formato usato fino all'inizio del 2025.
 
-## Bollette da cartella
+Con l'account, i PDF delle ultime 24 bollette gas vengono scaricati una sola volta in
+`config/plenitude/archivio/<conto>/` e letti da lì.
 
-Senza account, le bollette gas in PDF vengono lette da una cartella (predefinita
-`plenitude/bollette`, cioè `config/plenitude/bollette`, creata da sola al primo avvio).
+</details>
 
-**A mano:** copia nella cartella i PDF delle bollette gas scaricati dall'area clienti
-Plenitude. Più ne metti, più indietro va lo storico dei prezzi. Puoi rimuoverli dopo
-l'importazione: i periodi tariffari restano in MyItalgas.
+## 📁 Bollette da cartella
 
-**In automatico dalle email:** se ricevi le bollette via email con il PDF allegato, usa
-l'integrazione ufficiale **IMAP** di Home Assistant per salvare l'allegato nella cartella
-appena arriva (azione *Imap: scarica allegato* / `imap.download`).
+Senza account, le bollette gas in PDF vengono lette da una cartella: scegli **Cartella di
+PDF** quando aggiungi l'integrazione. La cartella predefinita è `config/plenitude/bollette`
+e viene creata da sola al primo avvio.
 
-## Come funziona l'accesso
+- **A mano:** copia nella cartella i PDF delle bollette gas scaricati dall'area clienti
+  Plenitude. Più ne metti, più indietro va lo storico dei prezzi. Puoi rimuoverli dopo
+  l'importazione: i periodi tariffari restano in MyItalgas.
+- **In automatico dalle email:** se ricevi le bollette via email con il PDF allegato, usa
+  l'integrazione ufficiale **IMAP** di Home Assistant per salvare l'allegato nella cartella
+  appena arriva (azione *Imap: scarica allegato* / `imap.download`).
+
+## 🔐 Come funziona l'accesso
 
 L'integrazione usa gli stessi servizi dell'app Plenitude. All'accesso con email, password
-e codice di verifica si ottiene una sessione che dura **un anno** ed è salvata nella
-configurazione di Home Assistant: dopo un riavvio non serve rifare nulla. Se la sessione
-scade o viene revocata (ad esempio cambiando password), Home Assistant mostra la richiesta
-di **riautenticazione** in *Impostazioni → Dispositivi e servizi*: basta inserire di nuovo
-password e codice.
+e codice di verifica si ottiene una sessione che dura **un anno**, salvata nella
+configurazione di Home Assistant: dopo un riavvio non serve rifare nulla.
 
-## Privacy
+Se la sessione scade o viene revocata (ad esempio cambiando password), Home Assistant
+mostra la richiesta di **riautenticazione** in *Impostazioni → Dispositivi e servizi*:
+basta inserire di nuovo password e codice. Se Plenitude è momentaneamente irraggiungibile,
+l'integrazione riprova da sola senza chiederti nulla.
+
+## 🛡️ Privacy
 
 - I dati restano sul tuo Home Assistant e vengono richiesti solo a Plenitude.
 - La password non viene salvata: si conserva solo la sessione dell'account.
 - I PDF scaricati restano in `config/plenitude/archivio/`; puoi cancellarli quando vuoi
   (verranno riscaricati solo quelli che servono).
-- La **diagnostica** scaricabile oscura email, sessione, codici dei conti, PDR, POD,
-  indirizzi e il riferimento alla fornitura MyItalgas.
+- La **diagnostica** scaricabile e i log non contengono credenziali, sessione, codici dei
+  conti, PDR, POD né indirizzi.
 
-## Risoluzione dei problemi
+## 🧰 Risoluzione dei problemi
 
 | Problema | Soluzione |
 |---|---|
@@ -204,8 +295,14 @@ password e codice.
 | I prezzi non arrivano in MyItalgas | Verifica la fornitura MyItalgas nelle opzioni e che MyItalgas sia installato. |
 
 Per il debug: **Impostazioni → Dispositivi e servizi → Plenitude → ⋮ → Abilita il debug**.
+Per segnalare un problema apri una
+[issue](https://github.com/LucaTomei/ha-plenitude/issues) allegando la diagnostica
+(è già priva di dati personali).
 
-## Sviluppo
+## 🛠️ Sviluppo
+
+<details>
+<summary><b>Test e rilascio</b></summary>
 
 ```bash
 python3.13 -m venv .venv && source .venv/bin/activate
@@ -215,10 +312,15 @@ pytest
 ```
 
 I test girano su un account Plenitude simulato e su bollette di esempio anonimizzate
-(nessun dato personale, nessun accesso reale a Plenitude). Per pubblicare una versione:
-aggiungi la voce in `CHANGELOG.md` e lancia `scripts/rilascia.sh X.Y.Z`.
+(nessun dato personale, nessun accesso reale a Plenitude), sia sull'ultima versione di
+Home Assistant sia sulla 2025.11.
 
-## Note legali
+Per pubblicare una versione: aggiungi la voce in `CHANGELOG.md` e lancia
+`scripts/rilascia.sh X.Y.Z`.
+
+</details>
+
+## ⚖️ Note legali
 
 Integrazione **non ufficiale**, non affiliata né approvata da Eni Plenitude S.p.A. I
 marchi citati appartengono ai rispettivi titolari e sono usati solo per identificare il
