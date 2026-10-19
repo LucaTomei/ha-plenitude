@@ -133,3 +133,21 @@ async def test_importazioni_ravvicinate(recorder_mock: Recorder, hass: HomeAssis
         ("2026-03", 200),
         ("2026-04", 210),
     ]
+
+
+async def test_dopo_un_riavvio(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """Dopo un riavvio le somme già registrate si rileggono dal database e si prosegue."""
+    await statistiche.importa_consumi(
+        hass, {"g": _conto({(2026, 1): 100, (2026, 2): 80, (2026, 3): 5}, parziale=(2026, 3))}
+    )
+    await async_wait_recording_done(hass)
+    hass.data.pop("plenitude_statistiche")  # come dopo un riavvio
+    await statistiche.importa_consumi(
+        hass, {"g": _conto({(2026, 2): 80, (2026, 3): 20, (2026, 4): 10})}
+    )
+    assert await _somme(hass) == [
+        ("2026-01", 100),
+        ("2026-02", 180),
+        ("2026-03", 200),
+        ("2026-04", 210),
+    ]

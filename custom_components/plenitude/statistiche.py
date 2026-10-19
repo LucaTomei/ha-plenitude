@@ -8,7 +8,7 @@ stimati vengono rettificati dalle letture successive.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 import logging
 
 from homeassistant.const import UnitOfEnergy, UnitOfVolume
@@ -25,6 +25,9 @@ _LOGGER = logging.getLogger(__name__)
 MESI_DA_AGGIORNARE = 3
 
 _INIZIO_STORICO = datetime(2000, 1, 1, tzinfo=UTC)
+
+# chiave in hass.data delle somme già importate (vedi `_registrate`)
+_MEMORIA = f"{DOMAIN}_statistiche"
 
 _UNITA: dict[str, tuple[str, str]] = {
     LUCE: (UnitOfEnergy.KILO_WATT_HOUR, "energy"),
@@ -59,70 +62,38 @@ async def importa_consumi(hass: HomeAssistant, conti: dict[str, Conto]) -> None:
 
 
 async def _importa(hass: HomeAssistant, conto: Conto) -> None:
-    from homeassistant.components.recorder import get_instance
     from homeassistant.components.recorder.models import (
         StatisticData,
         StatisticMeanType,
         StatisticMetaData,
     )
-    from homeassistant.components.recorder.statistics import (
-        async_add_external_statistics,
-        get_last_statistics,
-        statistics_during_period,
-    )
+    from homeassistant.components.recorder.statistics import async_add_external_statistics
 
     statistic_id = id_statistica(conto)
     mesi = [(_inizio_mese(c.mese), c.valore) for c in conto.consumi]
-    recorder = get_instance(hass)
-    # un'importazione precedente ancora in coda (es. due aggiornamenti ravvicinati) va
-    # scritta prima di leggere le somme, altrimenti si ripartirebbe da dati vecchi
-    await recorder.async_block_till_done()
+    registrate = await _registrate(hass, statistic_id)
 
-    ultima = await recorder.async_add_executor_job(
-        get_last_statistics, hass, 1, statistic_id, True, {"sum"}
-    )
     primo = 0
-    if righe := ultima.get(statistic_id):
-        ultimo_inizio = datetime.fromtimestamp(righe[0]["start"], UTC)
+    if registrate:
+        ultimo_inizio = max(registrate)
         nuovi = next((i for i, (inizio, _) in enumerate(mesi) if inizio > ultimo_inizio), len(mesi))
         primo = max(0, nuovi - MESI_DA_AGGIORNARE)
-    somma = 0.0
-    if righe:
-        # somma progressiva registrata fino al mese precedente il primo da (re)importare
-        precedenti = await recorder.async_add_executor_job(
-            statistics_during_period,
-            hass,
-            _INIZIO_STORICO,
-            mesi[primo][0],
-            {statistic_id},
-            "hour",
-            None,
-            {"sum"},
-        )
-        if storico := precedenti.get(statistic_id):
-            somma = storico[-1].get("sum") or 0.0
+    # somma progressiva registrata fino al mese precedente il primo da (re)importare
+    precedenti = [inizio for inizio in registrate if inizio < mesi[primo][0]]
+    somma = registrate[max(precedenti)] if precedenti else 0.0
 
     dati: list[StatisticData] = []
     for inizio, valore in mesi[primo:]:
         somma = round(somma + valore, 3)
         dati.append(StatisticData(start=inizio, sum=somma))
-    if righe and datetime.fromtimestamp(righe[0]["start"], UTC) > mesi[-1][0]:
-        # mesi già registrati che l'area clienti non riporta più (es. un mese parziale
-        # tolto): restano a consumo zero, così la somma non torna mai indietro
-        successivi = await recorder.async_add_executor_job(
-            statistics_during_period,
-            hass,
-            mesi[-1][0] + timedelta(hours=1),
-            None,
-            {statistic_id},
-            "hour",
-            None,
-            {"sum"},
-        )
-        dati.extend(
-            StatisticData(start=datetime.fromtimestamp(r["start"], UTC), sum=somma)
-            for r in successivi.get(statistic_id, [])
-        )
+    # mesi già registrati che l'area clienti non riporta più (es. un mese parziale tolto):
+    # restano a consumo zero, così la somma non torna mai indietro
+    dati.extend(
+        StatisticData(start=inizio, sum=somma)
+        for inizio in sorted(registrate)
+        if inizio > mesi[-1][0]
+    )
+    registrate.update({d["start"]: d["sum"] for d in dati})
 
     unita, classe = _UNITA[conto.commodity]
     nome = "luce" if conto.commodity == LUCE else "gas"
@@ -136,3 +107,32 @@ async def _importa(hass: HomeAssistant, conto: Conto) -> None:
         unit_of_measurement=unita,
     )
     async_add_external_statistics(hass, metadati, dati)
+
+
+async def _registrate(hass: HomeAssistant, statistic_id: str) -> dict[datetime, float]:
+    """Somme progressive già importate, per inizio del mese.
+
+    Si leggono dal database solo la prima volta; poi si tiene in memoria quello che è
+    stato importato. Il recorder scrive in un secondo momento: rileggere dal database
+    subito dopo un'importazione (due aggiornamenti ravvicinati) darebbe dati vecchi.
+    """
+    from homeassistant.components.recorder import get_instance
+    from homeassistant.components.recorder.statistics import statistics_during_period
+
+    memoria: dict[str, dict[datetime, float]] = hass.data.setdefault(_MEMORIA, {})
+    if statistic_id not in memoria:
+        righe = await get_instance(hass).async_add_executor_job(
+            statistics_during_period,
+            hass,
+            _INIZIO_STORICO,
+            None,
+            {statistic_id},
+            "hour",
+            None,
+            {"sum"},
+        )
+        memoria[statistic_id] = {
+            datetime.fromtimestamp(r["start"], UTC): r.get("sum") or 0.0
+            for r in righe.get(statistic_id, [])
+        }
+    return memoria[statistic_id]
