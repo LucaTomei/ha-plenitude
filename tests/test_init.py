@@ -51,12 +51,20 @@ async def test_sensori(hass: HomeAssistant) -> None:
     assert _stato(hass, "ultima_bolletta_importo").attributes["periodo_dal"] == "2026-06-01"
 
 
-async def test_cartella_assente(hass: HomeAssistant) -> None:
-    """Senza cartella l'avvio va in retry, senza errori irreversibili."""
+async def test_cartella_creata_automaticamente(hass: HomeAssistant) -> None:
+    """Se la cartella non esiste viene creata e l'integrazione si avvia con zero bollette."""
+    from pathlib import Path
+
+    from .conftest import CARTELLA
+
+    cartella = Path(hass.config.path(CARTELLA))
+    assert not await hass.async_add_executor_job(cartella.exists)
     entry = crea_entry(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
+    assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert entry.state is ConfigEntryState.LOADED
+    assert await hass.async_add_executor_job(cartella.is_dir)
+    assert _stato(hass, "bollette_lette").state == "0"
 
 
 async def test_cartella_vuota(hass: HomeAssistant) -> None:

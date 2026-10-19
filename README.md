@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/plenitude/brand/logo.png" alt="Plenitude" height="64">
+</p>
+
 <h1 align="center">Plenitude per Home Assistant</h1>
 
 <p align="center">
@@ -16,6 +20,12 @@ Energia con gli scaglioni e le quote fisse reali della bolletta.
 Le bollette vengono lette dai **PDF**: li metti in una cartella, oppure li fai depositare
 lì da un'automazione (ad esempio dalla posta con l'integrazione IMAP). L'accesso diretto
 all'app Plenitude non è incluso (vedi [Accesso all'app](#accesso-allapp)).
+
+```
+   bolletta PDF                Plenitude                      MyItalgas
+  (cartella / email)  ──▶  legge e calcola i prezzi  ──▶  periodi tariffari  ──▶  pannello
+                            (per scaglione + quota fissa)                         Energia
+```
 
 ---
 
