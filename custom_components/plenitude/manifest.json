@@ -1,12 +1,16 @@
 {
   "domain": "plenitude",
   "name": "Plenitude",
-  "codeowners": ["@LucaTomei"],
+  "codeowners": [
+    "@LucaTomei"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/LucaTomei/ha-plenitude",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/LucaTomei/ha-plenitude/issues",
-  "requirements": ["pdfplumber==0.11.4"],
+  "requirements": [
+    "pdfplumber==0.11.4"
+  ],
   "version": "0.1.0"
 }
