@@ -2,10 +2,11 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
-## [Non rilasciato]
+## [0.4.1] - 2026-10-19
 
 - Indicato in modo più evidente (README, HACS, configurazione) che l'integrazione è un
   progetto non ufficiale, non affiliato con Eni Plenitude.
+- Il logo di Plenitude è sostituito da un'icona neutra.
 
 ## [0.4.0] - 2026-10-19
 
