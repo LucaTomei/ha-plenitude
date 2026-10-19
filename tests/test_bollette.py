@@ -137,3 +137,101 @@ def test_quota_fissa_sempre_positiva_e_costante_nel_trimestre() -> None:
     periodi = bollette.periodi_tariffari(tutte)
     for p in periodi:
         assert 10 < p.quota_fissa < 30
+
+
+def test_formato_2024() -> None:
+    """Le bollette fino all'inizio del 2025 hanno intestazioni e date in un altro formato."""
+    b = bollette.analizza(_testo("bolletta-gas-formato-2024.txt"))
+    assert b is not None
+    assert (b.dal, b.al) == (date(2024, 10, 1), date(2024, 11, 30))
+    assert b.emissione == date(2024, 12, 4)
+    assert b.importo == 109.14
+    assert b.consumo_smc == 58
+    assert b.coefficiente == 0.992189
+    assert b.pdr == "01234567890123"
+    assert {v.ruolo for v in b.voci} == {
+        "commercializzazione",
+        "sconto",
+        "contributo",
+        "materia",
+        "quota_fissa",
+        "distribuzione",
+        "trasporto",
+        "oneri",
+        "accisa",
+        "addizionale",
+    }
+    # la riga dopo il cambio pagina resta della voce "Addizionale enti locali"
+    addizionale = [v for v in b.voci if v.ruolo == "addizionale"]
+    assert len(addizionale) == 4
+    # 32 righe di dettaglio, di cui 4 senza ruolo noto (CO2, oneri aggiuntivi) ignorate
+    assert len(b.voci) == 28
+
+    (ottobre, novembre) = bollette.periodi_tariffari([b])
+    assert ottobre.dal == date(2024, 10, 1)
+    assert novembre.quota_fissa == ottobre.quota_fissa
+    # quota fissa: (10 - 1 + 7,01416667 - 1,9275) €/mese con IVA al 22%
+    assert ottobre.quota_fissa == pytest.approx((10 - 1 + 7.01416667 - 1.9275) * 1.22, abs=1e-3)
+
+
+def test_periodo_in_lettere_non_valido() -> None:
+    """Mese sconosciuto o date impossibili: la bolletta non viene letta."""
+    testo = "Periodo di riferimento X\nda 1 Brumaio 2024 Y\na 30 Novembre 2024\nElementi di dettaglio gas"
+    assert bollette.analizza(testo) is None
+    testo = "Periodo di riferimento X\nda 31 Febbraio 2024 Y\na 30 Novembre 2024\nElementi di dettaglio gas"
+    assert bollette.analizza(testo) is None
+
+
+def test_scadenza_e_date_senza_spazi() -> None:
+    """Una scadenza d'esempio nelle pagine informative non viene scambiata per quella vera."""
+    testo = (
+        "Periodo di fatturazione: dal 01/06/2025 al 31/07/2025\n"
+        "Totale da pagare entro il 20/07/2025\n"
+        "Fattura elettronica numero1valida ai fini fiscali - Data di emissione21/08/2025\n"
+        "Totale da pagare entro il15/09/2025\n"
+        "In un anno hai consumato 440 smc\n"
+        "Elementi di dettaglio Gas\n"
+    )
+    b = bollette.analizza(testo)
+    assert b.emissione == date(2025, 8, 21)
+    assert b.scadenza == date(2025, 9, 15)
+    assert b.consumo_annuo_smc == 440
+
+
+def test_mesi_rifatturati_non_sommati() -> None:
+    """Se una bolletta rifattura un mese già fatturato vale la più recente, senza doppioni."""
+    prima = bollette.analizza(_testo("bolletta-gas-formato-2024.txt"))
+    seconda = bollette.Bolletta(
+        dal=date(2024, 12, 1),
+        al=date(2025, 1, 31),
+        emissione=date(2025, 2, 14),
+        voci=[
+            bollette.VoceCosto(
+                "commercializzazione", date(2024, 11, 1), date(2024, 12, 31), 12.0, 0, True, False
+            ),
+            bollette.VoceCosto(
+                "materia", date(2024, 11, 1), date(2024, 11, 30), 0.5, 0, False, True
+            ),
+        ],
+    )
+    periodi = {p.dal: p for p in bollette.periodi_tariffari([prima, seconda])}
+    assert periodi[date(2024, 10, 1)].quota_fissa == pytest.approx(
+        (10 - 1 + 7.01416667 - 1.9275) * 1.22, abs=1e-3
+    )
+    # novembre: solo la quota della seconda bolletta, non la somma delle due
+    assert periodi[date(2024, 11, 1)].quota_fissa == pytest.approx(12 * 1.22, abs=1e-3)
+    assert periodi[date(2024, 12, 1)].quota_fissa == pytest.approx(12 * 1.22, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    "nome",
+    [
+        "bolletta-sintetica.txt",
+        "bolletta-gas-20260828.txt",
+        "bolletta-gas-formato-2024.txt",
+    ],
+)
+def test_cache_andata_e_ritorno(nome: str) -> None:
+    """La forma salvata nella cache ricostruisce la stessa bolletta."""
+    b = bollette.analizza(_testo(nome))
+    assert bollette.bolletta_da_dict(bollette.bolletta_a_dict(b)) == b

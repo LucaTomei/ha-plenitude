@@ -7,8 +7,29 @@
       "ultima_bolletta_scadenza": {
         "default": "mdi:calendar-alert"
       },
+      "ultima_bolletta_emissione": {
+        "default": "mdi:calendar-text"
+      },
       "ultima_bolletta_consumo": {
         "default": "mdi:fire"
+      },
+      "da_pagare": {
+        "default": "mdi:cash-clock"
+      },
+      "bollette_da_pagare": {
+        "default": "mdi:file-alert"
+      },
+      "consumo_ultimo_mese": {
+        "default": "mdi:chart-bar"
+      },
+      "consumo_12_mesi": {
+        "default": "mdi:chart-timeline-variant"
+      },
+      "lettura_contatore": {
+        "default": "mdi:meter-gas"
+      },
+      "prossima_autolettura": {
+        "default": "mdi:counter"
       },
       "consumo_annuo": {
         "default": "mdi:fire-circle"

@@ -1,0 +1,79 @@
+rif. bolletta* data di emissione numero cliente
+1000000001 04.12.2024 500 000 000 001
+*numero fattura elettronica valido ai fini fiscali(ex. art. 21 D.P.R.N.633/72 IVA e art. 1 D.M. 370 24.10.2000)
+La mia bolletta
+gas
+MARIO ROSSI
+Periodo di riferimento VIA ROMA 1
+da 1 Ottobre 2024 00100 ROMA RM
+a 30 Novembre 2024
+La mia fornitura - MERCATO LIBERO Quanto devo pagare?
+109,14 €
+Totale fornitura gas smc 58 tipologia cliente:uso domestico
+* consumi adeguati al coefficiente correttivo C pari a 0,992189
+coefficiente correttivo C:0,992189
+codice punto riconsegna (PDR):01234567890123
+Pag. 1
+Elementi di dettaglio gas
+Consumo 0 121 481 1.561 5.001 80.001 200.001 1.000.001
+(smc/anno) 120 480 1.560 5.000 80.000 200.000 1.000.000 INFINITO
+Spesa per la materia gas naturale 50,77 €
+Quota fissa €
+Commercializzazione e vendita - parte fissa quantità €
+DAL 01/10/2024 AL 31/10/2024 €/pdr/mese 10,00000000 1 10,00 ORD
+DAL 01/11/2024 AL 30/11/2024 €/pdr/mese 10,00000000 1 10,00 ORD
+Gas con compensazione CO2 quantità €
+DAL 01/10/2024 AL 31/10/2024 €/pdr/mese 0,00000000 1 0,00 ORD
+DAL 01/11/2024 AL 30/11/2024 €/pdr/mese 0,00000000 1 0,00 ORD
+Sconto Domiciliazione quantità €
+DAL 01/10/2024 AL 31/10/2024 €/pdr/mese -1,00000000 1 -1,00 ORD
+DAL 01/11/2024 AL 30/11/2024 €/pdr/mese -1,00000000 1 -1,00 ORD
+Quota energia €
+Contributo al consumo smc €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,11197178 14 1,57 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,11197178 44 4,93 AGE
+Corrispettivo Gas Index smc €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,45291431 14 6,34 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,45291431 44 19,93 AGE
+Oneri Aggiuntivi compresi Oneri di smc scaglioni €
+Gradualità
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,00000000 14 1 0,00 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,00000000 44 1 0,00 AGE
+Spesa per la distribuzione e il trasporto del gas naturale e per la gestione del contatore 33,23 €
+Quota fissa quantità €
+DAL 01/10/2024 AL 31/10/2024 €/cliente/mese 7,01416667 1 7,01 ORD
+DAL 01/11/2024 AL 30/11/2024 €/cliente/mese 7,01416667 1 7,01 ORD
+Quota Energia (distribuzione) smc scaglioni €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,01564100 0 1 0,00 AGE
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,18107200 14 2 2,54 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,01564100 0 1 0,00 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,18107200 44 2 7,97 AGE
+Quota Energia (trasporto) smc scaglioni €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,15001137 14 2 2,10 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,15001137 44 2 6,60 AGE
+Spesa per gli oneri di sistema 0,20 €
+Quota fissa quantità €
+DAL 01/10/2024 AL 31/10/2024 €/cliente/mese -1,92750000 1 -1,93 ORD
+DAL 01/11/2024 AL 30/11/2024 €/cliente/mese -1,92750000 1 -1,93 ORD
+Quota energia smc scaglioni €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,07009400 14 2 0,98 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,07009400 44 2 3,08 AGE
+Totale imposte 11,94 €
+Imposta erariale (3) smc scaglioni €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,04400000 0 1 0,00 AGE
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,17500000 14 2 2,45 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,04400000 0 1 0,00 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,17500000 44 2 7,70 AGE
+Addizionale enti locali (4) smc scaglioni €
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,02200000 0 1 0,00 AGE
+DAL 01/10/2024 AL 31/10/2024 €/smc 0,03099000 14 2 0,43 AGE
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,02200000 0 1 0,00 AGE
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI)
+Pag. 4
+rif. bolletta* data di emissione numero cliente
+1000000001 04.12.2024 500 000 000 001
+DAL 01/11/2024 AL 30/11/2024 €/smc 0,03099000 44 2 1,36 AGE
+Riepilogo gas
++ + + TOTALE netto IVA 96,14 €
+TOTALE FORNITURA DI GAS E IMPOSTE 109,14 €
+Totale bolletta salvo conguaglio 109,14 €

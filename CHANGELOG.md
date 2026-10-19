@@ -2,6 +2,34 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.3.0] - 2026-10-19
+
+### Novità
+
+- **Accesso all'account Plenitude** con email, password e codice di verifica via email:
+  bollette, consumi e letture di luce e gas vengono letti e aggiornati in automatico.
+  La sessione dura un anno e resta valida ai riavvii; se scade, Home Assistant chiede di
+  autenticarsi di nuovo.
+- Sensori per ogni fornitura: ultima bolletta (importo, emissione, scadenza, stato del
+  pagamento), totale e numero di bollette da pagare, consumo dell'ultimo mese e degli
+  ultimi 12 mesi (luce anche per fascia), lettura del contatore gas e prossima
+  autolettura.
+- Storico dei consumi mensili nel pannello Energia (statistiche esterne in kWh e m³).
+- I PDF delle bollette gas vengono scaricati in `config/plenitude/archivio` e letti per
+  inviare i prezzi a MyItalgas, come con la cartella.
+- La cartella di PDF resta disponibile come alternativa all'account.
+
+### Correzioni
+
+- Lette anche le bollette gas nel formato usato fino all'inizio del 2025: lo storico dei
+  prezzi parte dalle bollette più vecchie.
+- Quando una bolletta rifattura mesi già fatturati (conguaglio con le letture reali), la
+  quota fissa di quei mesi non viene più sommata due volte.
+- La scadenza non viene più presa da un esempio nelle pagine informative della bolletta;
+  date di emissione e consumo annuo letti anche quando nel PDF manca lo spazio.
+- Un PDF in un formato non previsto viene ignorato invece di bloccare l'aggiornamento.
+- I sensori degli importi indicano l'unità di misura (€).
+
 ## [0.2.0] - 2026-10-19
 
 ### Novità

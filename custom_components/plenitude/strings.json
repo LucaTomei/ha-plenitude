@@ -3,7 +3,54 @@
     "step": {
       "user": {
         "title": "Plenitude",
-        "description": "Bills are read from a folder. Direct app access is not available yet.",
+        "description": "Choose where to read your bills from.",
+        "menu_options": {
+          "account": "Plenitude account (email and password)",
+          "cartella": "Folder of PDF bills"
+        }
+      },
+      "account": {
+        "title": "Plenitude account",
+        "description": "Sign in with the email and password of the Plenitude app. A verification code will be sent to your email. The password is not stored.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "codice": {
+        "title": "Verification code",
+        "description": "Enter the code sent to {email}.",
+        "data": {
+          "codice": "Code",
+          "reinvia": "Send a new code"
+        },
+        "data_description": {
+          "codice": "The 6-digit code in the email from Plenitude.",
+          "reinvia": "Tick to receive a new code instead of entering one."
+        }
+      },
+      "opzioni": {
+        "title": "Options",
+        "data": {
+          "intervallo_ore": "Update interval",
+          "config_entry_myitalgas": "MyItalgas gas supply to update"
+        },
+        "data_description": {
+          "intervallo_ore": "How often, in hours, to read bills, consumption and readings from the account.",
+          "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The Plenitude session has expired. Sign in again: a new verification code will be sent to your email.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "cartella": {
+        "title": "Folder of PDF bills",
+        "description": "Bills are read from a folder.",
         "data": {
           "cartella_bollette": "Bills folder",
           "intervallo_ore": "Update interval",
@@ -16,8 +63,18 @@
         }
       }
     },
+    "error": {
+      "invalid_auth": "Wrong email or password.",
+      "cannot_connect": "Unable to reach Plenitude. Try again later.",
+      "unknown": "Unexpected error.",
+      "account_bloccato": "Too many attempts: the account is temporarily locked. Try again later.",
+      "codice_errato": "Wrong or expired code.",
+      "verifica_scaduta": "The verification has expired. Close this window and start again."
+    },
     "abort": {
-      "already_configured": "Plenitude is already configured."
+      "already_configured": "Plenitude is already configured.",
+      "reauth_successful": "Signed in again successfully.",
+      "account_diverso": "This is a different Plenitude account from the configured one."
     }
   },
   "options": {
@@ -27,12 +84,14 @@
         "data": {
           "cartella_bollette": "Bills folder",
           "intervallo_ore": "Update interval",
-          "config_entry_myitalgas": "MyItalgas gas supply to update"
+          "config_entry_myitalgas": "MyItalgas gas supply to update",
+          "conto_gas": "Plenitude gas account linked to MyItalgas"
         },
         "data_description": {
           "cartella_bollette": "Folder (under the Home Assistant configuration) where to put the Plenitude PDF bills. Copy them by hand or have an automation drop them there (for example the IMAP integration when the e-mail arrives).",
-          "intervallo_ore": "How often, in hours, to re-check the folder.",
-          "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there."
+          "intervallo_ore": "How often, in hours, to update the data.",
+          "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there.",
+          "conto_gas": "Only needed if the account has more than one gas supply."
         }
       }
     }
@@ -53,11 +112,29 @@
           },
           "consumo_smc": {
             "name": "Consumption (Smc)"
+          },
+          "numero": {
+            "name": "Bill number"
+          },
+          "scadenza": {
+            "name": "Due date"
+          },
+          "stato_pagamento": {
+            "name": "Payment status"
+          },
+          "metodo_pagamento": {
+            "name": "Payment method"
+          },
+          "da_pagare": {
+            "name": "Amount due"
           }
         }
       },
       "ultima_bolletta_scadenza": {
         "name": "Last bill due date"
+      },
+      "ultima_bolletta_emissione": {
+        "name": "Last bill issue date"
       },
       "ultima_bolletta_consumo": {
         "name": "Last bill consumption",
@@ -73,6 +150,67 @@
           },
           "consumo_smc": {
             "name": "Consumption (Smc)"
+          }
+        }
+      },
+      "da_pagare": {
+        "name": "Amount due",
+        "state_attributes": {
+          "bollette": {
+            "name": "Bills"
+          },
+          "prossima_scadenza": {
+            "name": "Next due date"
+          }
+        }
+      },
+      "bollette_da_pagare": {
+        "name": "Unpaid bills"
+      },
+      "consumo_ultimo_mese": {
+        "name": "Last month consumption",
+        "state_attributes": {
+          "mese": {
+            "name": "Month"
+          },
+          "parziale": {
+            "name": "Partial"
+          },
+          "fascia_f1": {
+            "name": "F1 band"
+          },
+          "fascia_f2": {
+            "name": "F2 band"
+          },
+          "fascia_f3": {
+            "name": "F3 band"
+          }
+        }
+      },
+      "consumo_12_mesi": {
+        "name": "Last 12 months consumption",
+        "state_attributes": {
+          "dal": {
+            "name": "From"
+          },
+          "al": {
+            "name": "To"
+          }
+        }
+      },
+      "lettura_contatore": {
+        "name": "Meter reading",
+        "state_attributes": {
+          "data_lettura": {
+            "name": "Reading date"
+          }
+        }
+      },
+      "prossima_autolettura": {
+        "name": "Next self-reading",
+        "state_attributes": {
+          "fino_al": {
+            "name": "Until"
           }
         }
       },

@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from dataclasses import asdict
 from pathlib import Path
 import shutil
 from unittest.mock import patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from custom_components.plenitude.const import (
     CONF_CARTELLA_BOLLETTE,
+    CONF_EMAIL,
     CONF_INTERVALLO_ORE,
+    CONF_SESSIONE,
     DOMAIN,
 )
 from homeassistant.core import HomeAssistant
+
+from .plenitude_finto import EMAIL, SESSIONE, FintoPlenitude
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CARTELLA = "plenitude/bollette"
@@ -28,8 +34,8 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 
 @pytest.fixture(autouse=True)
 def _cartella_pulita(hass: HomeAssistant) -> Generator[None]:
-    """La config dir dei test è condivisa: si svuota la cartella bollette prima di ogni test."""
-    cartella = Path(hass.config.path(CARTELLA))
+    """La config dir dei test è condivisa: si svuotano bollette e archivio prima di ogni test."""
+    cartella = Path(hass.config.path("plenitude"))
     if cartella.exists():
         shutil.rmtree(cartella)
     yield
@@ -63,6 +69,25 @@ def crea_entry(hass: HomeAssistant, **opzioni) -> MockConfigEntry:
         title="Plenitude",
         data={CONF_CARTELLA_BOLLETTE: CARTELLA},
         options={CONF_CARTELLA_BOLLETTE: CARTELLA, CONF_INTERVALLO_ORE: 12, **opzioni},
+    )
+    entry.add_to_hass(hass)
+    return entry
+
+
+@pytest.fixture
+def finto(aioclient_mock: AiohttpClientMocker) -> FintoPlenitude:
+    """Gigya e area clienti Plenitude simulati."""
+    return FintoPlenitude(aioclient_mock)
+
+
+def crea_entry_account(hass: HomeAssistant, **opzioni) -> MockConfigEntry:
+    """Config entry di un account Plenitude già autenticato."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title=f"Plenitude ({EMAIL})",
+        unique_id=SESSIONE.uid,
+        data={CONF_EMAIL: EMAIL, CONF_SESSIONE: asdict(SESSIONE)},
+        options={CONF_INTERVALLO_ORE: 12, **opzioni},
     )
     entry.add_to_hass(hass)
     return entry

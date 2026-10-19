@@ -1,6 +1,9 @@
 {
   "domain": "plenitude",
   "name": "Plenitude",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@LucaTomei"
   ],

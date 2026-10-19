@@ -3,7 +3,54 @@
     "step": {
       "user": {
         "title": "Plenitude",
-        "description": "Le bollette vengono lette da una cartella. L'accesso diretto all'app non è ancora disponibile.",
+        "description": "Scegli da dove leggere le bollette.",
+        "menu_options": {
+          "account": "Account Plenitude (email e password)",
+          "cartella": "Cartella di bollette PDF"
+        }
+      },
+      "account": {
+        "title": "Account Plenitude",
+        "description": "Accedi con email e password dell'app Plenitude. Riceverai un codice di verifica per email. La password non viene salvata.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "codice": {
+        "title": "Codice di verifica",
+        "description": "Inserisci il codice inviato a {email}.",
+        "data": {
+          "codice": "Codice",
+          "reinvia": "Invia un nuovo codice"
+        },
+        "data_description": {
+          "codice": "Il codice di 6 cifre nella mail di Plenitude.",
+          "reinvia": "Seleziona per ricevere un nuovo codice invece di inserirlo."
+        }
+      },
+      "opzioni": {
+        "title": "Opzioni",
+        "data": {
+          "intervallo_ore": "Intervallo di aggiornamento",
+          "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare"
+        },
+        "data_description": {
+          "intervallo_ore": "Ogni quante ore leggere bollette, consumi e letture dall'account.",
+          "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nuovo accesso",
+        "description": "La sessione Plenitude è scaduta. Accedi di nuovo: riceverai un nuovo codice di verifica per email.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "cartella": {
+        "title": "Cartella di bollette PDF",
+        "description": "Le bollette vengono lette da una cartella.",
         "data": {
           "cartella_bollette": "Cartella delle bollette",
           "intervallo_ore": "Intervallo di aggiornamento",
@@ -16,8 +63,18 @@
         }
       }
     },
+    "error": {
+      "invalid_auth": "Email o password errate.",
+      "cannot_connect": "Impossibile contattare Plenitude. Riprova più tardi.",
+      "unknown": "Errore inatteso.",
+      "account_bloccato": "Troppi tentativi: l'account è bloccato temporaneamente. Riprova più tardi.",
+      "codice_errato": "Codice errato o scaduto.",
+      "verifica_scaduta": "La verifica è scaduta. Chiudi questa finestra e ricomincia."
+    },
     "abort": {
-      "already_configured": "Plenitude è già configurato."
+      "already_configured": "Plenitude è già configurato.",
+      "reauth_successful": "Nuovo accesso eseguito.",
+      "account_diverso": "È un account Plenitude diverso da quello configurato."
     }
   },
   "options": {
@@ -27,12 +84,14 @@
         "data": {
           "cartella_bollette": "Cartella delle bollette",
           "intervallo_ore": "Intervallo di aggiornamento",
-          "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare"
+          "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare",
+          "conto_gas": "Conto gas Plenitude collegato a MyItalgas"
         },
         "data_description": {
           "cartella_bollette": "Cartella (sotto la configurazione di Home Assistant) in cui mettere le bollette PDF di Plenitude. Puoi copiarle a mano o farle depositare da un'automazione (ad esempio dall'integrazione IMAP quando arriva la mail).",
-          "intervallo_ore": "Ogni quante ore ricontrollare la cartella.",
-          "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari."
+          "intervallo_ore": "Ogni quante ore aggiornare i dati.",
+          "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari.",
+          "conto_gas": "Serve solo se l'account ha più di una fornitura gas."
         }
       }
     }
@@ -53,11 +112,29 @@
           },
           "consumo_smc": {
             "name": "Consumo (Smc)"
+          },
+          "numero": {
+            "name": "Numero bolletta"
+          },
+          "scadenza": {
+            "name": "Scadenza"
+          },
+          "stato_pagamento": {
+            "name": "Stato del pagamento"
+          },
+          "metodo_pagamento": {
+            "name": "Metodo di pagamento"
+          },
+          "da_pagare": {
+            "name": "Da pagare"
           }
         }
       },
       "ultima_bolletta_scadenza": {
         "name": "Scadenza ultima bolletta"
+      },
+      "ultima_bolletta_emissione": {
+        "name": "Emissione ultima bolletta"
       },
       "ultima_bolletta_consumo": {
         "name": "Consumo ultima bolletta",
@@ -73,6 +150,67 @@
           },
           "consumo_smc": {
             "name": "Consumo (Smc)"
+          }
+        }
+      },
+      "da_pagare": {
+        "name": "Da pagare",
+        "state_attributes": {
+          "bollette": {
+            "name": "Bollette"
+          },
+          "prossima_scadenza": {
+            "name": "Prossima scadenza"
+          }
+        }
+      },
+      "bollette_da_pagare": {
+        "name": "Bollette da pagare"
+      },
+      "consumo_ultimo_mese": {
+        "name": "Consumo ultimo mese",
+        "state_attributes": {
+          "mese": {
+            "name": "Mese"
+          },
+          "parziale": {
+            "name": "Parziale"
+          },
+          "fascia_f1": {
+            "name": "Fascia F1"
+          },
+          "fascia_f2": {
+            "name": "Fascia F2"
+          },
+          "fascia_f3": {
+            "name": "Fascia F3"
+          }
+        }
+      },
+      "consumo_12_mesi": {
+        "name": "Consumo ultimi 12 mesi",
+        "state_attributes": {
+          "dal": {
+            "name": "Dal"
+          },
+          "al": {
+            "name": "Al"
+          }
+        }
+      },
+      "lettura_contatore": {
+        "name": "Lettura contatore",
+        "state_attributes": {
+          "data_lettura": {
+            "name": "Data lettura"
+          }
+        }
+      },
+      "prossima_autolettura": {
+        "name": "Prossima autolettura",
+        "state_attributes": {
+          "fino_al": {
+            "name": "Fino al"
           }
         }
       },
