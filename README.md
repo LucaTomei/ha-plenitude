@@ -1,15 +1,8 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="custom_components/plenitude/brand/dark_logo.png">
-    <img src="custom_components/plenitude/brand/logo.png" alt="Plenitude" height="72">
-  </picture>
-</p>
-
 <h1 align="center">Plenitude per Home Assistant</h1>
 
 <p align="center">
-  <b>Bollette, consumi e letture di luce e gas del tuo account Eni Plenitude,<br>
-  direttamente in Home Assistant e nel pannello Energia.</b>
+  <b>Integrazione non ufficiale</b> che porta in Home Assistant bollette, consumi e letture<br>
+  di luce e gas del <b>tuo</b> account Eni Plenitude, anche nel pannello Energia.
 </p>
 
 <p align="center">
@@ -19,6 +12,12 @@
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.11%2B-03A9F4?style=flat-square&logo=homeassistant&logoColor=white" alt="Home Assistant 2025.11+">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/LucaTomei/ha-plenitude?style=flat-square" alt="Licenza MIT"></a>
 </p>
+
+> [!CAUTION]
+> **Progetto personale e non ufficiale.** Non è affiliato, collegato, sponsorizzato,
+> approvato né supportato da Eni Plenitude S.p.A., da Eni S.p.A. o da altre società del
+> gruppo. Per qualsiasi questione sulla tua fornitura rivolgiti a Plenitude; per problemi
+> di questa integrazione apri una issue qui. Vedi le [note legali](#%EF%B8%8F-note-legali).
 
 ## 🚀 Installazione in 3 click
 
@@ -353,6 +352,20 @@ Per pubblicare una versione: aggiungi la voce in `CHANGELOG.md` e lancia
 
 ## ⚖️ Note legali
 
-Integrazione **non ufficiale**, non affiliata né approvata da Eni Plenitude S.p.A. I
-marchi citati appartengono ai rispettivi titolari e sono usati solo per identificare il
-servizio. Distribuita con licenza [MIT](LICENSE).
+- **Progetto indipendente.** Questa integrazione è un progetto personale, sviluppato
+  nel tempo libero e distribuito gratuitamente. Non è affiliata, collegata, sponsorizzata,
+  approvata né supportata da Eni Plenitude S.p.A., da Eni S.p.A. o da altre società del
+  gruppo, e non ne rappresenta in alcun modo la posizione.
+- **Marchi.** "Eni", "Plenitude", i relativi loghi e gli altri marchi citati appartengono
+  ai rispettivi titolari. Sono usati solo per indicare con quale servizio funziona
+  l'integrazione, senza alcuna pretesa di titolarità o di approvazione.
+- **Uso dei dati.** L'integrazione accede soltanto all'account di chi la configura, con le
+  sue credenziali, agli stessi dati che quella persona vede nell'app Plenitude, e li
+  conserva solo nella sua installazione di Home Assistant. Ogni utente è responsabile
+  dell'uso che ne fa e del rispetto delle condizioni del servizio Plenitude.
+- **Nessuna garanzia.** Il software è fornito "così com'è", senza garanzie, come previsto
+  dalla licenza [MIT](LICENSE). I dati mostrati sono indicativi: per importi, scadenze e
+  consumi fanno fede le bollette e l'area clienti Plenitude.
+- **Richieste dei titolari.** Se sei titolare di un diritto e ritieni che qualcosa in
+  questo repository debba essere modificato o rimosso, apri una issue: la richiesta verrà
+  valutata e gestita prontamente.

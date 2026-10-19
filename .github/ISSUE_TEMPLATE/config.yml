@@ -1,1 +1,7 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Problemi con la fornitura, le bollette o l'account Plenitude
+    url: https://eniplenitude.com/contatti
+    about: >-
+      Questo è un progetto non ufficiale, non affiliato con Eni Plenitude: per la tua
+      fornitura rivolgiti direttamente al servizio clienti Plenitude.

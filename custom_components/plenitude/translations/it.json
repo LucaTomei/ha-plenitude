@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Plenitude",
-        "description": "Scegli da dove leggere le bollette.",
+        "description": "Integrazione non ufficiale, non affiliata né approvata da Eni Plenitude. Scegli da dove leggere le bollette.",
         "menu_options": {
           "account": "Account Plenitude (email e password)",
           "cartella": "Cartella di bollette PDF"

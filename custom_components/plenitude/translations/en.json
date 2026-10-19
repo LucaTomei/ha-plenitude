@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Plenitude",
-        "description": "Choose where to read your bills from.",
+        "description": "Unofficial integration, not affiliated with or endorsed by Eni Plenitude. Choose where to read your bills from.",
         "menu_options": {
           "account": "Plenitude account (email and password)",
           "cartella": "Folder of PDF bills"

@@ -1,6 +1,8 @@
 {
-  "name": "Plenitude",
+  "name": "Plenitude (non ufficiale)",
   "homeassistant": "2025.11.0",
-  "country": ["IT"],
+  "country": [
+    "IT"
+  ],
   "render_readme": true
 }

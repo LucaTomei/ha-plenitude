@@ -1,6 +1,6 @@
 {
   "domain": "plenitude",
-  "name": "Plenitude",
+  "name": "Plenitude (non ufficiale)",
   "after_dependencies": [
     "recorder"
   ],
