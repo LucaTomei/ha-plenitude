@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Plenitude",
+        "description": "Bills are read from a folder. Direct app access is not available yet.",
+        "data": {
+          "cartella_bollette": "Bills folder",
+          "intervallo_ore": "Update interval",
+          "config_entry_myitalgas": "MyItalgas gas supply to update"
+        },
+        "data_description": {
+          "cartella_bollette": "Folder (under the Home Assistant configuration) where to put the Plenitude PDF bills. Copy them by hand or have an automation drop them there (for example the IMAP integration when the e-mail arrives).",
+          "intervallo_ore": "How often, in hours, to re-check the folder.",
+          "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Plenitude is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Plenitude options",
+        "data": {
+          "cartella_bollette": "Bills folder",
+          "intervallo_ore": "Update interval",
+          "config_entry_myitalgas": "MyItalgas gas supply to update"
+        },
+        "data_description": {
+          "cartella_bollette": "Folder (under the Home Assistant configuration) where to put the Plenitude PDF bills. Copy them by hand or have an automation drop them there (for example the IMAP integration when the e-mail arrives).",
+          "intervallo_ore": "How often, in hours, to re-check the folder.",
+          "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ultima_bolletta_importo": {
+        "name": "Last bill amount",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Period from"
+          },
+          "periodo_al": {
+            "name": "Period to"
+          },
+          "emissione": {
+            "name": "Issue date"
+          },
+          "consumo_smc": {
+            "name": "Consumption (Smc)"
+          }
+        }
+      },
+      "ultima_bolletta_scadenza": {
+        "name": "Last bill due date"
+      },
+      "ultima_bolletta_consumo": {
+        "name": "Last bill consumption",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Period from"
+          },
+          "periodo_al": {
+            "name": "Period to"
+          },
+          "emissione": {
+            "name": "Issue date"
+          },
+          "consumo_smc": {
+            "name": "Consumption (Smc)"
+          }
+        }
+      },
+      "consumo_annuo": {
+        "name": "Yearly consumption"
+      },
+      "bollette_lette": {
+        "name": "Bills read",
+        "state_attributes": {
+          "periodi_tariffari": {
+            "name": "Tariff periods"
+          }
+        }
+      },
+      "ultimo_aggiornamento": {
+        "name": "Last update"
+      }
+    }
+  }
+}

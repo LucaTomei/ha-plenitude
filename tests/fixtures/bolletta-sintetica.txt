@@ -1,0 +1,49 @@
+Gas 5000000000000
+Periodo di fatturazione: dal 01/06/2026 al 31/07/2026
+Indirizzo di fornitura PDR Matricola misuratore
+VIA ROMA 1, 00100 ROMA RM 01234567890123 MIT0000000000001
+Consumo fatturato* 20
+Tipologia d'uso: cottura Coefficiente C*: 0,990000
+Totale da pagare per questa bolletta 50,00 €
+Elementi di dettaglio Gas
+Spesa per la vendita di gas naturale
+Quota fissa
+Commercializzazione e vendita - parte fissa tipo prezzo prezzo quantità € regime iva
+DAL 01/06/2026 AL 31/07/2026 €/pdr/mese 10,00000000 2 20,00 ORD
+Quota energia
+Corrispettivo Gas Index tipo prezzo prezzo smc € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,50000000 12 6,00 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,60000000 8 4,80 AGE
+Contributo al consumo tipo prezzo prezzo smc € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,10000000 12 1,20 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,10000000 8 0,80 AGE
+Totale 12,80 €
+Spesa per la tariffa per l'uso della rete del gas naturale
+Quota fissa tipo prezzo prezzo quantità € regime iva
+DAL 01/06/2026 AL 31/07/2026 €/cliente/mese 5,00000000 2 10,00 ORD
+Quota Energia (distribuzione) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,10000000 0 1 0,00 AGE
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,20000000 12 2 2,40 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,10000000 0 1 0,00 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,20000000 8 2 1,60 AGE
+Quota Energia (trasporto) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,05000000 12 2 0,60 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,05000000 8 2 0,40 AGE
+Totale 15,00 €
+Spesa per gli oneri generali di sistema
+Quota energia tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,03000000 0 1 0,00 AGE
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,08000000 12 2 0,96 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,08000000 8 2 0,64 AGE
+Totale 2,56 €
+Totale imposte
+Imposta erariale (3) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,04000000 0 1 0,00 AGE
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,15000000 12 2 1,80 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,15000000 8 2 1,20 AGE
+Addizionale enti locali (4) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,02000000 0 1 0,00 AGE
+DAL 01/06/2026 AL 30/06/2026 €/Smc 0,03000000 12 2 0,36 AGE
+DAL 01/07/2026 AL 31/07/2026 €/Smc 0,03000000 8 2 0,24 AGE
+Totale 3,60 €
+Totale da pagare per questa bolletta 50,00 €

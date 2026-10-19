@@ -1,0 +1,292 @@
+Bolletta Numero Cliente
+Gas 5000000000000
+Contratto intestato a:
+Mario Rossi
+Codice Fiscale/Partita IVA
+RSSMRA80A01H501U
+Indirizzo di fatturazione Mario Rossi
+VIA ROMA 1, 00100 ROMA
+VIA ROMA 1
+RM
+00100 ROMA RM
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026
+Gas
+Totale da pagare entro il 06/07/2026
+102,72 Consumo del periodo
+€ di fatturazione
+50
+Smc
+Per maggiori dettagli si veda lo Scontrino dell'energia nella pagina seguente
+Modalità di pagamento
+In un anno hai consumato 474 Smc (dal 01/06/2025 al
+Addebito diretto salvo buon fine il 06/07/2026 sul conto corrente che termina con 000 presso 31/05/2026)
+FIN-ECO BANCA ICQ.
+Offerta contrattuale attiva
+I tuoi pagamenti sono regolari
+TREND CASA GAS
+Al 11/06/2026 le tue bollette scadute risultano pagate.
+Mercato libero
+Scadenza condizioni economiche: 01/12/2024
+Come contattare Plenitude Chi chiamare in caso di guasti o pronto
+intervento
+Sito web Corrispondenza e reclami
+eniplenitude.com/info - vai su eniplenitude.com/scrivici
+Pronto intervento Gas, fughe di gas, guasti o
+Scarica l'App - spedisci a Casella postale 71, 20068 malfunzionamenti numero verde 800-900.999 a cura di
+Eni Plenitude Peschiera Borromeo (MI) ITALGAS RETI S.p.A.
+Servizio Clienti Eni Plenitude
+Punti vendita
+Rete fissa 800 900 700
+eniplenitude.com/energy-store
+Rete mobile 02 444 141
+Pag. 1
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Indirizzo di fornitura PDR Matricola misuratore
+VIA ROMA 1, 00100 ROMA RM 01234567890123 MIT0000000000001
+Scontrino dell'energia Box dell'offerta
+Prezzo medio Importi
+Caratteristiche della mia offerta
+QUOTA PER CONSUMI 50 Smc 1,022000 51,10 €
+Nome offerta: TREND CASA GAS
+€/Smc
+Codice offerta: 026160GSVML06XX0GTCASAVBAS130223
+di cui spesa per la vendita di gas 0,627000 31,35 € Tipologia offerta: a prezzo variabile
+naturale €/Smc Codice condizioni economiche: GTCASAV222_BASE_18072022_GAS
+Validità condizioni economiche: dal 01/12/2022 al 01/12/2024
+di cui spesa per la rete e gli oneri 0,395000 19,75 €
+Scadenza contratto: indeterminata
+generali di sistema €/Smc
+Frequenza fatturazione: bimestrale
+QUOTA FISSA 2 mesi 14,420000 28,84 € Oneri di recesso: no
+€/mese
+Altre caratteristiche: Gas con compensazione CO2
+di cui spesa per la vendita di gas 9,000000 18,00 € Scadenza Condizioni Economiche
+Le tue condizioni economiche sono scadute ma, come previsto dal contratto,
+naturale €/mese
+continuano ad esserti applicate fino a nuova comunicazione che ti sarà
+di cui spesa per la rete e gli oneri 5,420000 10,84 € inviata con un preavviso di almeno 90 giorni. Qualora avessi già ricevuto
+generali di sistema €/mese tale comunicazione, ti rassicuriamo che farà fede la data di decorrenza delle
+nuove condizioni economiche in essa riportata.
+Accise e IVA 22,78 €
+Dettaglio dei costi della mia offerta
+Totale spesa prevista dall’offerta: 49,35 €
+Totale bolletta 102,72 €
+Di cui spesa per la quota consumi: 31,35 €
+Di cui spesa per la quota fissa: 18,00 €
+Totale da pagare 102,72 €
+Quota per consumi
+Formula prevista: Corrispettivo Gas Index + Contributo al consumo
+Mese di riferimento Corrispettivo Gas Index Contributo al consumo
+Aprile 2026 0,51071710 €/smc 0,11203458 €/smc
+Maggio 2026 0,52049594 €/smc 0,11203458 €/smc
+Corrispettivo Gas Index
+Indice di riferimento: PSV Day Ahead Heren Mid
+Periodicità di aggiornamento dell’indice: Mensile
+Quali spese comprende la mia bolletta?
+Il prezzo medio rappresenta un valore medio di sintesi. I singoli prezzi e corrispettivi applicati ai quantitativi consumati sono negli Elementi di dettaglio.
+La spesa per la vendita di gas naturale è determinata in base ai corrispettivi di vendita previsti dal contratto e indicati nel Box dell'offerta. La spesa per la
+rete e gli oneri generali di sistema comprende gli importi per le attività di trasporto del gas naturale sulle reti di trasmissione nazionali, di distribuzione
+locale e per l'attività di misura; i corrispettivi per tali attività sono definiti dall'Autorità in modo uniforme su tutto il territorio nazionale, tenendo conto dei
+costi sostenuti per tali attività. Nella voce sono anche compresi gli oneri generali di sistema, relativi ad attività di interesse generale.
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 2
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Caratteristiche tecniche della fornitura
+Tipologia cliente: domestico Classe misuratore: G4
+Potere calorifico superiore convenzionale: 0,039959 GJ/Smc Tipologia misuratore: smart meter
+Tipologia d'uso: acqua calda sanitaria e/o cottura cibi abitazione + Coefficiente C*: 0,992189
+riscaldamento
+Data attivazione: 01/12/2022
+* Il volume del Gas è soggetto a variazioni dovute alla temperatura e alla pressione esterna. Il Coefficiente Correttivo C è quindi il coefficiente che converte il
+consumo misurato dal contatore, espresso in metri cubi, nell'unità di misura utilizzata per la fatturazione ovvero gli "Smc" (Standard metri cubi), unità di misura
+del Gas a condizioni standard di temperatura e pressione.
+Letture e Consumi
+Come comunico l’autolettura?
+Consumo La tua bolletta si basa su consumi effettivi, per il
+Letture precedenti bollette Data Segnanti
+Smc momento non è necessario comunicarci l’autolettura.
+Ultima Lettura Rilevata fatturata 31/03/2026 1540
+Consumo
+Letture presente bolletta Data Segnanti
+Smc
+Rilevata distributore 30/04/2026 1568 28
+Rilevata distributore 31/05/2026 1590 22
+Consumo fatturato* 50
+*consumi adeguati al coefficiente correttivo C pari a 0,992189
+Imposte
+IMPOSTE
+Periodo Quantità Scaglione Accisa Accisa Addizionale regionale Addizionale regionale
+dal - al Smc Corrispettivi €/Smc Importo € Corrispettivi €/Smc Importo €
+01/04/2026 - 30/04/2026 0 1 0,04400000 0,00 0,02200000 0,00
+01/04/2026 - 30/04/2026 28 2 0,17500000 4,90 0,03099000 0,87
+01/05/2026 - 31/05/2026 0 1 0,04400000 0,00 0,02200000 0,00
+01/05/2026 - 31/05/2026 22 2 0,17500000 3,85 0,03099000 0,68
+Totale Imposte 8,75 € 1,55 €
+.IVA
+Imponibile Aliquota IVA
+Descrizione
+€ IVA €
+ALIQUOTA IVA 10% 61,40 10% 6,14
+ALIQUOTA ORDINARIA 22% 28,84 22% 6,34
+Totale IVA 12,48 €
+Iva ad esigibilità immediata - Imposta di bollo assolta ai sensi dell'art. 6 del D.M. del 17.06.2014, se dovuta.
+Oneri Generali di Sistema
+Totale Oneri Generali di Sistema Gas: 0,71 €
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 3
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Informazioni storiche
+Storico consumi Consumo annuo 474 Smc
+dal 01/06/2025 al 31/05/2026
+Spesa annua 743,86 €
+dal 12/06/2025 al 11/06/2026
+2024 2026
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 4
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Informazioni relative ai pagamenti e rateizzazione
+Modalità di Pagamento
+La bolletta verrà addebitata in automatico alla scadenza sul conto corrente indicato in prima pagina.
+Interessi per ritardato pagamento
+In caso di pagamento oltre il termine di scadenza sarà applicato un interesse di mora pari a quanto previsto da ARERA all'articolo 8 della delibera 229/01 e
+successive modifiche o integrazioni; ai sensi della medesima delibera, al cliente che ha pagato nei termini di scadenza le bollette relative all'ultimo biennio
+sarà applicato il solo interesse legale per i primi 10 giorni di ritardo.
+Informazioni per il consumatore
+Per trovare le offerte del mercato libero più adatte alle tue esigenze, per conoscere meglio le tue abitudini di consumo o saperne di più sui tuoi diritti,
+consulta www.arera.it/consumatori.
+Servizio Conciliazione
+Tutti i clienti - domestici e non domestici - possono ricorrere al Servizio Conciliazione Clienti Energia gestito da Acquirente Unico per conto di ARERA,
+secondo le modalità consultabili all'indirizzo http://www.arera.it/it/consumatori/conciliazione.htm
+I clienti domestici possono, inoltre, ricorrere alla procedura dell'organismo ADR di conciliazione paritetica Eni Plenitude/Associazioni di consumatori,
+secondo le modalità consultabili all'indirizzo https://eniplenitude.com/consumerismo/conciliazione
+Eni Plenitude si impegna a partecipare ad entrambe le procedure, accessibili gratuitamente per il Cliente.
+Come trovare gli altri strumenti di trasparenza
+Elementi di Dettaglio
+Gli Elementi di dettaglio di questa bolletta sono già consultabili nell'Area Personale del sito eniplenitude.com o tramite APP Eni Plenitude e sono,
+comunque, sempre disponibili su richiesta del cliente.
+Glossario della bolletta di energia elettrica e gas
+Sul sito di internet di Eni Plenitude, alla pagina eniplenitude.com/info/glossario, è disponibile il Glossario, uno strumento che intende fornire una
+descrizione chiara della terminologia tecnica utilizzata nelle bollette di energia elettrica e gas.
+Altre informazioni
+Gas con compensazione CO2
+Ti ricordiamo che le emissioni di CO2 derivanti dai tuoi consumi gas vengono compensate con progetti di riduzione delle emissioni di gas serra.
+Aggiornamenti tariffari
+A decorrere dal 1° aprile 2026 le tariffe di fornitura del gas naturale sono quelle definite dall'Autorità con delibere n° 126/2025/R/GAS, 198/2025/R/GAS,
+360/2025/R/GAS, 574/2025/R/GAS, 97/2026/R/GAS e 98/2026/R/COM.
+Comunicazioni dell'Autorità di Regolazione per Energia Reti e Ambiente
+Gentile Cliente,
+• Tutte le fonti di energia possono anche beneficiare di incentivi non finanziati dalle voci di spesa in bolletta.
+• Se sei un cliente vulnerabile, come definito dalla normativa vigente, puoi scegliere specifiche condizioni economiche e contrattuali per
+la fornitura di gas definite dall'Autorità di Regolazione per Energia Reti e Ambiente (ARERA). Per sapere se ne hai diritto consulta il sito
+www.arera.it/consumatori o chiama il numero verde 800.166.654.
+• BONUS SOCIALI ELETTRICO E GAS PER DISAGIO ECONOMICO - Per ottenere i bonus sociali elettrico e gas è necessario presentare ogni
+anno la Dichiarazione Sostitutiva Unica (DSU) e ottenere un'attestazione ISEE (https://www.inps.it/prestazioni-servizi/come-compilare-la-dsu-
+e-richiedere-l-isee) entro la soglia prevista dalla normativa. Per maggiori informazioni contatti il Numero Verde 800.166654 o visiti il sito
+https://www.arera.it/it/bonus_sociale.htm.
+• Assicurazione clienti finali – Delibera ARERA 85/2024/R/gas - Chiunque usi, anche occasionalmente, il gas fornito tramite reti di distribuzione o
+reti di trasporto, beneficia in via automatica di una copertura assicurativa contro gli incidenti da gas, ai sensi della deliberazione 85/2024/R/gas
+dell'Autorità di Regolazione per Energia Reti e Ambiente. Per ulteriori informazioni si può contattare lo Sportello per il consumatore energia e
+ambiente al numero verde 800.166.654 o con le modalità indicate nel sito internet www.arera.it.
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 5
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Ulteriori comunicazioni e obblighi informativi
+Copia fatt. elettronica disponibile sul sito web Agenzia delle Entrate
+Sicurezza impianto gas - Delibera 40/2014/R/gas
+Informazioni sugli obblighi in tema di sicurezza relativi agli impianti di utenza a gas sono disponibili sul sito Eni Plenitude, alla pagina
+www.eniplenitude.com/info/sicurezza-post-contatore.
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 6
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Consumo 0 121 481 1.561 5.001 80.001 200.001 1.000.001
+(smc/anno) 120 480 1.560 5.000 80.000 200.000 1.000.000 INFINITO
+Gli scaglioni relativi alla spesa per il trasporto,
+1 2 3 4 5 6 7 8
+la gestione del contatore e gli altri oneri
+Elementi di dettaglio Gas
+Spesa per la vendita di gas naturale
+Quota fissa
+Commercializzazione e vendita - parte fissa tipo prezzo prezzo quantità € regime iva
+DAL 01/04/2026 AL 31/05/2026 €/pdr/mese 10,00000000 2 20,00 ORD
+Sconto Domiciliazione tipo prezzo prezzo quantità € regime iva
+DAL 01/04/2026 AL 31/05/2026 €/pdr/mese -1,00000000 2 -2,00 ORD
+Quota energia
+Corrispettivo Gas Index tipo prezzo prezzo smc € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,51071710 28 14,30 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,52049594 22 11,45 AGE
+Contributo al consumo tipo prezzo prezzo smc € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,11203458 28 3,14 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,11203458 22 2,46 AGE
+Totale 49,35 €
+Spesa per la tariffa per l'uso della rete del gas naturale
+Quota fissa tipo prezzo prezzo quantità € regime iva
+DAL 01/04/2026 AL 31/05/2026 €/cliente/mese 7,22500000 2 14,45 ORD
+Quota Energia (distribuzione) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,03762500 0 1 0,00 AGE
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,23142600 28 2 6,48 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,03762500 0 1 0,00 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,23142600 22 2 5,09 AGE
+Quota Energia (trasporto) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,07717414 28 2 2,16 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,07717414 22 2 1,70 AGE
+Totale 29,88 €
+Spesa per gli oneri generali di sistema
+Quota fissa tipo prezzo prezzo quantità € regime iva
+DAL 01/04/2026 AL 31/05/2026 €/cliente/mese -1,80250000 2 -3,61 ORD
+Quota energia tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,08630900 28 2 2,42 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,08630900 22 2 1,90 AGE
+Totale 0,71 €
+Totale imposte
+Imposta erariale (3) tipo prezzo prezzo smc scaglioni € regime iva
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,04400000 0 1 0,00 AGE
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,17500000 28 2 4,90 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,04400000 0 1 0,00 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,17500000 22 2 3,85 AGE
+Addizionale enti locali (4) tipo prezzo prezzo smc scaglioni € regime iva
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 7
+Bolletta Numero Cliente
+Periodo di fatturazione: dal 01/04/2026 al 31/05/2026
+Fattura elettronica numero 000 valida ai fini fiscali - Data di emissione 11/06/2026 Gas 5000000000000
+Elementi di dettaglio Gas
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,02200000 0 1 0,00 AGE
+DAL 01/04/2026 AL 30/04/2026 €/Smc 0,03099000 28 2 0,87 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,02200000 0 1 0,00 AGE
+DAL 01/05/2026 AL 31/05/2026 €/Smc 0,03099000 22 2 0,68 AGE
+Totale 10,30 €
+Riepilogo gas
+Totale netto IVA 90,24 €
+IVA su imponibile di euro 12,48 €
+Totale fornitura di gas e imposte 102,72 €
+Riepilogo complessivo IVA
+Descrizione Imponibile Aliquota Importo IVA
+Aliquota Ordinaria 22% 28,84 € 22 % 6,34 €
+Aliquota Iva 10% 61,40 € 10 % 6,14 €
+Iva ad esigibilità immediata - Imposta di bollo assolta ai sensi dell'art. 6 del D.M. del 17.06.2014, se dovuta.
+Totale bolletta salvo ricalcolo 102,72 €
+Totale da pagare per questa bolletta 102,72 €
+(3) Imposta di consumo erariale. Rivalsa sull'importo versato all'Erario (D.LGS 26/10/1995 N. 504 e successive modificazioni).
+(4) Imposta addizionale regionale all'imposta di consumo sul gas metano. Rivalsa sull'importo versato alle Regioni (Decreto Legislativo 21/12/90 n.398).
+Eni Plenitude SpA Società Benefit – Sede Legale in Milano (MI), Via Giovanni Lorenzini, 4 - Capitale Sociale Euro 855.555.556,00 i.v. – Registro Imprese di Milano-Monza-Brianza-Lodi,
+Codice Fiscale e Partita IVA 12300020158 - R.E.A. Milano n. 1544762 – Società soggetta all’attività di direzione e coordinamento di Eni S.p.A.
+Pag. 8

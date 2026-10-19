@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Plenitude",
+        "description": "Le bollette vengono lette da una cartella. L'accesso diretto all'app non è ancora disponibile.",
+        "data": {
+          "cartella_bollette": "Cartella delle bollette",
+          "intervallo_ore": "Intervallo di aggiornamento",
+          "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare"
+        },
+        "data_description": {
+          "cartella_bollette": "Cartella (sotto la configurazione di Home Assistant) in cui mettere le bollette PDF di Plenitude. Puoi copiarle a mano o farle depositare da un'automazione (ad esempio dall'integrazione IMAP quando arriva la mail).",
+          "intervallo_ore": "Ogni quante ore ricontrollare la cartella.",
+          "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Plenitude è già configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Plenitude",
+        "data": {
+          "cartella_bollette": "Cartella delle bollette",
+          "intervallo_ore": "Intervallo di aggiornamento",
+          "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare"
+        },
+        "data_description": {
+          "cartella_bollette": "Cartella (sotto la configurazione di Home Assistant) in cui mettere le bollette PDF di Plenitude. Puoi copiarle a mano o farle depositare da un'automazione (ad esempio dall'integrazione IMAP quando arriva la mail).",
+          "intervallo_ore": "Ogni quante ore ricontrollare la cartella.",
+          "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ultima_bolletta_importo": {
+        "name": "Importo ultima bolletta",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Periodo dal"
+          },
+          "periodo_al": {
+            "name": "Periodo al"
+          },
+          "emissione": {
+            "name": "Data di emissione"
+          },
+          "consumo_smc": {
+            "name": "Consumo (Smc)"
+          }
+        }
+      },
+      "ultima_bolletta_scadenza": {
+        "name": "Scadenza ultima bolletta"
+      },
+      "ultima_bolletta_consumo": {
+        "name": "Consumo ultima bolletta",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Periodo dal"
+          },
+          "periodo_al": {
+            "name": "Periodo al"
+          },
+          "emissione": {
+            "name": "Data di emissione"
+          },
+          "consumo_smc": {
+            "name": "Consumo (Smc)"
+          }
+        }
+      },
+      "consumo_annuo": {
+        "name": "Consumo annuo"
+      },
+      "bollette_lette": {
+        "name": "Bollette lette",
+        "state_attributes": {
+          "periodi_tariffari": {
+            "name": "Periodi tariffari"
+          }
+        }
+      },
+      "ultimo_aggiornamento": {
+        "name": "Ultimo aggiornamento"
+      }
+    }
+  }
+}

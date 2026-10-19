@@ -1,0 +1,24 @@
+{
+  "entity": {
+    "sensor": {
+      "ultima_bolletta_importo": {
+        "default": "mdi:cash"
+      },
+      "ultima_bolletta_scadenza": {
+        "default": "mdi:calendar-alert"
+      },
+      "ultima_bolletta_consumo": {
+        "default": "mdi:fire"
+      },
+      "consumo_annuo": {
+        "default": "mdi:fire-circle"
+      },
+      "bollette_lette": {
+        "default": "mdi:file-document-multiple"
+      },
+      "ultimo_aggiornamento": {
+        "default": "mdi:cloud-sync"
+      }
+    }
+  }
+}

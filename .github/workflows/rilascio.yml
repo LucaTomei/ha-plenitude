@@ -1,0 +1,69 @@
+name: Rilascio
+
+# Avviato dal push di un tag vX.Y.Z (vedi scripts/rilascia.sh).
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rilascio
+  cancel-in-progress: false
+
+jobs:
+  validazione:
+    uses: ./.github/workflows/validazione.yml
+
+  pubblica:
+    name: Pubblica la release
+    needs: validazione
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Controlla la versione
+        run: |
+          VERSIONE="${TAG#v}"
+          if ! [[ "$VERSIONE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag non valido: $TAG (formato atteso vX.Y.Z)"
+            exit 1
+          fi
+          MANIFEST=$(jq -r .version custom_components/plenitude/manifest.json)
+          if [ "$MANIFEST" != "$VERSIONE" ]; then
+            echo "::error::manifest.json indica $MANIFEST, il tag $TAG"
+            exit 1
+          fi
+
+      - name: Note di rilascio
+        run: |
+          VERSIONE="${TAG#v}"
+          awk -v v="$VERSIONE" '
+            index($0, "## [" v "]") == 1 { dentro = 1; next }
+            dentro && /^## \[/ { exit }
+            dentro { print }
+          ' CHANGELOG.md > note.md
+          if ! grep -q '[^[:space:]]' note.md; then
+            echo "::error::Manca la voce [$VERSIONE] in CHANGELOG.md"
+            exit 1
+          fi
+          cat note.md
+
+      - name: Crea il pacchetto
+        run: |
+          cd custom_components/plenitude
+          zip -r -X "$GITHUB_WORKSPACE/plenitude.zip" . -x "__pycache__/*" "*.pyc"
+          unzip -l "$GITHUB_WORKSPACE/plenitude.zip"
+
+      - name: Pubblica
+        run: |
+          gh release create "$TAG" plenitude.zip \
+            --verify-tag \
+            --title "$TAG" \
+            --notes-file note.md \
+            --latest
