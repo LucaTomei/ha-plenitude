@@ -2,7 +2,17 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
-## [0.3.1] - 2026-10-19
+## [0.4.0] - 2026-10-19
+
+### Novità
+
+- **Prezzo medio** per luce e gas: importo dell'ultima bolletta diviso per il consumo del
+  periodo fatturato, tutto compreso. Per la luce è il prezzo da usare nel pannello Energia.
+- **Prezzo gas**: prezzo per Smc nello scaglione raggiunto nell'anno, IVA inclusa, da usare
+  nel pannello Energia per il gas.
+- Pulsante **Scarica le bollette**: rilegge subito l'account e scarica le bollette mancanti,
+  riprovando anche quelle che prima non erano disponibili.
+- Vengono scaricate anche le ultime bollette della luce (per il periodo fatturato).
 
 ### Correzioni
 

@@ -1,5 +1,10 @@
 {
   "entity": {
+    "button": {
+      "scarica_bollette": {
+        "default": "mdi:file-download"
+      }
+    },
     "sensor": {
       "ultima_bolletta_importo": {
         "default": "mdi:cash"
@@ -24,6 +29,12 @@
       },
       "consumo_12_mesi": {
         "default": "mdi:chart-timeline-variant"
+      },
+      "prezzo_medio": {
+        "default": "mdi:cash-multiple"
+      },
+      "prezzo_gas": {
+        "default": "mdi:gas-burner"
       },
       "lettura_contatore": {
         "default": "mdi:meter-gas"

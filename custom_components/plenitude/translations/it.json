@@ -97,6 +97,11 @@
     }
   },
   "entity": {
+    "button": {
+      "scarica_bollette": {
+        "name": "Scarica le bollette"
+      }
+    },
     "sensor": {
       "ultima_bolletta_importo": {
         "name": "Importo ultima bolletta",
@@ -198,6 +203,40 @@
           }
         }
       },
+      "prezzo_medio": {
+        "name": "Prezzo medio",
+        "state_attributes": {
+          "numero": {
+            "name": "Numero bolletta"
+          },
+          "periodo_dal": {
+            "name": "Periodo dal"
+          },
+          "periodo_al": {
+            "name": "Periodo al"
+          },
+          "consumo": {
+            "name": "Consumo"
+          },
+          "importo": {
+            "name": "Importo"
+          }
+        }
+      },
+      "prezzo_gas": {
+        "name": "Prezzo gas",
+        "state_attributes": {
+          "scaglione": {
+            "name": "Scaglione"
+          },
+          "mese_tariffa": {
+            "name": "Mese della tariffa"
+          },
+          "consumo_anno": {
+            "name": "Consumo dell'anno"
+          }
+        }
+      },
       "lettura_contatore": {
         "name": "Lettura contatore",
         "state_attributes": {
@@ -228,6 +267,11 @@
       "ultimo_aggiornamento": {
         "name": "Ultimo aggiornamento"
       }
+    }
+  },
+  "exceptions": {
+    "aggiornamento_non_riuscito": {
+      "message": "Aggiornamento dell'account Plenitude non riuscito. Riprova più tardi."
     }
   }
 }

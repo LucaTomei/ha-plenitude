@@ -83,7 +83,7 @@ def test_consumi_gas() -> None:
     assert conto.consumi[-1].parziale
     assert conto.ultimo_consumo.mese == date(2026, 9, 1)
     assert conto.ultimo_consumo.valore == 17
-    assert conto.consumo_12_mesi == 40 + 90 + 104 + 17
+    assert conto.consumo_12_mesi == 40 + 90 + 104 + 12 + 8 + 17
 
 
 def test_consumi_luce_fasce() -> None:
@@ -127,3 +127,46 @@ def test_conto_vuoto() -> None:
     assert conto.consumo_12_mesi is None
     assert conto.totale_da_pagare == 0
     assert conto.ultima_pdf is None
+
+
+def test_prezzo_medio() -> None:
+    """Importo della bolletta diviso per il consumo dei mesi fatturati."""
+    conto = account.conto_da(CONTI[1])
+    conto.bollette = account.bollette_da(BOLLETTE[CONTO_LUCE])
+    conto.consumi = account.consumi_da(CONSUMI[CONTO_LUCE], "luce")
+    assert conto.prezzo_medio is None  # periodo non ancora noto
+    conto.periodi_bollette = {"9100000002": (date(2026, 8, 1), date(2026, 9, 30))}
+    prezzo = conto.prezzo_medio
+    assert prezzo.valore == round(328.78 / (230 + 240), 4)
+    assert (prezzo.numero, prezzo.consumo, prezzo.importo) == ("9100000002", 470, 328.78)
+
+
+def test_prezzo_medio_senza_consumi_del_periodo() -> None:
+    """Se mancano i consumi di un mese fatturato si usa la bolletta precedente."""
+    conto = account.conto_da(CONTI[1])
+    conto.bollette = account.bollette_da(BOLLETTE[CONTO_LUCE])
+    conto.consumi = account.consumi_da(CONSUMI[CONTO_LUCE], "luce")
+    conto.periodi_bollette = {
+        "9100000002": (date(2026, 9, 1), date(2026, 10, 31)),  # ottobre non c'è
+        "9100000001": (date(2026, 8, 1), date(2026, 8, 31)),
+    }
+    assert conto.prezzo_medio.numero == "9100000001"
+    assert conto.prezzo_medio.valore == round(153.97 / 230, 4)
+
+
+def test_prezzo_gas_per_scaglione() -> None:
+    """Lo scaglione segue il consumo dall'inizio dell'anno."""
+    from custom_components.plenitude.bollette import PeriodoTariffario
+
+    conto = account.conto_da(CONTI[0])
+    assert conto.prezzo_gas is None
+    conto.periodi = [PeriodoTariffario(date(2026, 7, 1), 0.9, 1.3, 1.5, 17.6)]
+    for consumo, scaglione, prezzo in ((100, 1, 0.9), (300, 2, 1.3), (600, 3, 1.5)):
+        conto.consumi = [account.ConsumoMese(date(2026, 1, 1), consumo, {}, False)]
+        assert (conto.prezzo_gas.scaglione, conto.prezzo_gas.valore) == (scaglione, prezzo)
+    # i consumi degli anni precedenti non contano
+    conto.consumi = [
+        account.ConsumoMese(date(2025, 12, 1), 900, {}, False),
+        account.ConsumoMese(date(2026, 1, 1), 50, {}, False),
+    ]
+    assert conto.prezzo_gas.scaglione == 1

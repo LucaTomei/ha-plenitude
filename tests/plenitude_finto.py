@@ -129,6 +129,16 @@ PDF_GAS: dict[str, str] = {
 }
 
 
+# PDF (testo) delle bollette luce: serve solo il periodo fatturato
+PDF_LUCE: dict[str, str] = {
+    "9100000002": (
+        "Bolletta luce\nPeriodo di fatturazione: dal 01/08/2026 al 30/09/2026\n"
+        "Totale da pagare 328,78 € Indice di riferimento: PUN Index GME\n"
+        "Elementi di dettaglio Luce\n"
+    ),
+}
+
+
 def _mese(anno: int, mese: int, **valori: Any) -> dict[str, Any]:
     return {"year": str(anno), "numericalMonth": mese - 1, "isPartial": False, **valori}
 
@@ -141,6 +151,8 @@ CONSUMI: dict[str, list[dict[str, Any]]] = {
                 _mese(2025, 11, consumptions=40),
                 _mese(2025, 12, consumptions=90),
                 _mese(2026, 1, consumptions=104),
+                _mese(2026, 6, consumptions=12),
+                _mese(2026, 7, consumptions=8),
                 _mese(2026, 9, consumptions=17),
                 {**_mese(2026, 10, consumptions=3), "isPartial": True},
             ],
@@ -311,6 +323,11 @@ class FintoPlenitude:
             if self.errori_temporanei_pdf:
                 self.errori_temporanei_pdf -= 1
                 return self._risposta(method, url, status=HTTPStatus.BAD_GATEWAY, text="")
+            if numero in PDF_LUCE:
+                self.pdf_scaricati.append(numero)
+                return self._risposta(
+                    method, url, response=b"%PDF-1.7\n" + PDF_LUCE[numero].encode()
+                )
             if numero not in PDF_GAS:
                 return self._risposta(method, url, json={"errore": "documento assente"})
             self.pdf_scaricati.append(numero)

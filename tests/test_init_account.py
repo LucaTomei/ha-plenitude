@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
+from custom_components.plenitude import bollette
 from custom_components.plenitude.const import (
     CARTELLA_ARCHIVIO,
     CONF_PDR_MYITALGAS,
@@ -63,7 +64,7 @@ async def test_sensori_gas(hass: HomeAssistant, finto: FintoPlenitude) -> None:
     assert consumo.state == "17.0"
     assert consumo.attributes["unit_of_measurement"] == "Smc"
     assert consumo.attributes["mese"] == "2026-09"
-    assert _stato(hass, f"{CONTO_GAS}_consumo_12_mesi").state == "251.0"
+    assert _stato(hass, f"{CONTO_GAS}_consumo_12_mesi").state == "271.0"
     lettura = _stato(hass, f"{CONTO_GAS}_lettura_contatore")
     assert lettura.state == "1637"
     assert lettura.attributes["unit_of_measurement"] == "m³"
@@ -101,18 +102,19 @@ async def test_sensori_luce(hass: HomeAssistant, finto: FintoPlenitude) -> None:
 
 
 async def test_pdf_archiviati(hass: HomeAssistant, finto: FintoPlenitude) -> None:
-    """I PDF delle bollette gas vengono scaricati una sola volta nell'archivio."""
+    """I PDF delle bollette (gas e ultime luce) vengono scaricati una sola volta."""
     entry = await _avvia(hass)
     assert sorted(finto.pdf_scaricati) == [
         "9000000001",
         "9000000002",
         "9000000003",
         "9000000004",
+        "9100000002",
     ]
     cartella = Path(hass.config.path(CARTELLA_ARCHIVIO)) / CONTO_GAS
     assert await hass.async_add_executor_job(lambda: len(list(cartella.glob("*.pdf")))) == 4
     await _aggiorna(hass, entry)
-    assert len(finto.pdf_scaricati) == 4
+    assert len(finto.pdf_scaricati) == 5
 
 
 async def test_pdf_non_disponibile(hass: HomeAssistant, finto: FintoPlenitude) -> None:
@@ -122,9 +124,9 @@ async def test_pdf_non_disponibile(hass: HomeAssistant, finto: FintoPlenitude) -
         {**finto.bollette[CONTO_GAS][0], "numeroBolletta": "9000000099", "emissione": "01/10/2026"},
     )
     entry = await _avvia(hass)
-    assert len(finto.pdf_scaricati) == 4
+    assert len(finto.pdf_scaricati) == 5
     await _aggiorna(hass, entry)
-    assert len(finto.pdf_scaricati) == 4
+    assert len(finto.pdf_scaricati) == 5
     assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "4"
 
 
@@ -246,14 +248,14 @@ async def test_riavvio(hass: HomeAssistant, finto: FintoPlenitude) -> None:
     await hass.async_block_till_done()
     jwt_prima = finto.jwt_emessi
     letture_prima = pdf.estrai_testo.call_count
-    assert letture_prima == 4
+    assert letture_prima == 5
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert pdf.estrai_testo.call_count == letture_prima
     assert entry.state is ConfigEntryState.LOADED
     assert finto.jwt_emessi == jwt_prima + 1
     assert "accounts.login" not in finto.parametri_gigya
-    assert len(finto.pdf_scaricati) == 4
+    assert len(finto.pdf_scaricati) == 5
     assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "4"
     assert _stato(hass, f"{CONTO_GAS}_ultima_bolletta_importo").state == "63.32"
 
@@ -321,14 +323,14 @@ async def test_cache_bollette(
         "version": 1,
         "key": chiave,
         "data": {
-            "versione": 1,
-            "bollette": {f"{CONTO_GAS}/9000000004.pdf": {"t": "x", "s": 1, "b": None}},
+            "versione": bollette.VERSIONE_LETTURA,
+            "bollette": {f"{CONTO_GAS}/9000000004.pdf": {"t": "x", "s": 1, "b": None, "p": None}},
         },
     }
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "4"
-    assert len(hass_storage[chiave]["data"]["bollette"]) == 4
+    assert len(hass_storage[chiave]["data"]["bollette"]) == 5
 
     cartella = Path(hass.config.path(CARTELLA_ARCHIVIO)) / CONTO_GAS
     await hass.async_add_executor_job((cartella / "9000000001.pdf").unlink)
@@ -336,7 +338,7 @@ async def test_cache_bollette(
     letture = pdf.estrai_testo.call_count
     await _aggiorna(hass, entry)
     assert pdf.estrai_testo.call_count == letture
-    assert len(hass_storage[chiave]["data"]["bollette"]) == 3
+    assert len(hass_storage[chiave]["data"]["bollette"]) == 4
     assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "3"
 
     assert await hass.config_entries.async_remove(entry.entry_id)
@@ -382,8 +384,8 @@ async def test_cache_di_altra_versione(
     letture = pdf.estrai_testo.call_count
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
-    assert pdf.estrai_testo.call_count == letture + 4
-    assert hass_storage[chiave]["data"]["versione"] == 1
+    assert pdf.estrai_testo.call_count == letture + 5
+    assert hass_storage[chiave]["data"]["versione"] == bollette.VERSIONE_LETTURA
 
 
 async def test_pdf_in_formato_imprevisto(hass: HomeAssistant, finto: FintoPlenitude) -> None:
@@ -409,9 +411,9 @@ async def test_download_ritentato_dopo_errore_temporaneo(
     """Un errore temporaneo nel download non esclude la bolletta: si riprova dopo."""
     finto.errori_temporanei_pdf = 1
     entry = await _avvia(hass)
-    assert len(finto.pdf_scaricati) == 3
-    await _aggiorna(hass, entry)
     assert len(finto.pdf_scaricati) == 4
+    await _aggiorna(hass, entry)
+    assert len(finto.pdf_scaricati) == 5
     assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "4"
 
 
@@ -425,3 +427,83 @@ async def test_account_bloccato_durante_aggiornamento(
     await _aggiorna(hass, entry)
     assert not entry.runtime_data.last_update_success
     assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+
+
+async def test_prezzo_medio(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Prezzo medio effettivo dall'ultima bolletta, in unità accettate dal pannello Energia."""
+    from homeassistant.components.energy import validate
+
+    await _avvia(hass)
+    luce = _stato(hass, f"{CONTO_LUCE}_prezzo_medio")
+    assert float(luce.state) == pytest.approx(328.78 / 470, abs=1e-4)
+    assert luce.attributes["unit_of_measurement"] == "€/kWh"
+    assert luce.attributes["unit_of_measurement"].endswith(validate.ENERGY_PRICE_UNITS)
+    assert luce.attributes["periodo_dal"] == "2026-08-01"
+    assert luce.attributes["consumo"] == 470
+    assert "device_class" not in luce.attributes
+    gas = _stato(hass, f"{CONTO_GAS}_prezzo_medio")
+    assert float(gas.state) == pytest.approx(63.32 / 20, abs=1e-4)
+    assert gas.attributes["unit_of_measurement"] == "€/m³"
+    assert gas.attributes["unit_of_measurement"].endswith(validate.GAS_PRICE_UNITS)
+    assert gas.attributes["numero"] == "9000000004"
+
+
+async def test_pulsante_scarica_bollette(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Il pulsante riprova anche le bollette prima non disponibili e attende i download."""
+    from .plenitude_finto import PDF_LUCE
+
+    testo = PDF_LUCE.pop("9100000002")
+    try:
+        entry = await _avvia(hass)
+        assert "9100000002" not in finto.pdf_scaricati
+        assert _stato(hass, f"{CONTO_LUCE}_prezzo_medio").state == "unknown"
+    finally:
+        PDF_LUCE["9100000002"] = testo  # ora il documento è disponibile
+    pulsante = er.async_get(hass).async_get_entity_id(
+        "button", DOMAIN, f"{entry.entry_id}_scarica_bollette"
+    )
+    await hass.services.async_call("button", "press", {"entity_id": pulsante}, blocking=True)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert "9100000002" in finto.pdf_scaricati
+    assert _stato(hass, f"{CONTO_LUCE}_prezzo_medio").state != "unknown"
+
+
+async def test_pulsante_con_errore(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Se l'account non risponde il pulsante segnala l'errore all'utente."""
+    from homeassistant.exceptions import HomeAssistantError
+
+    entry = await _avvia(hass)
+    finto.errori["/api/c360/init"] = HTTPStatus.SERVICE_UNAVAILABLE
+    pulsante = er.async_get(hass).async_get_entity_id(
+        "button", DOMAIN, f"{entry.entry_id}_scarica_bollette"
+    )
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call("button", "press", {"entity_id": pulsante}, blocking=True)
+
+
+async def test_nessun_pulsante_con_la_cartella(hass: HomeAssistant) -> None:
+    """Con le bollette da cartella non c'è il pulsante (non c'è nulla da scaricare)."""
+    from .conftest import crea_entry
+
+    entry = crea_entry(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    entita = er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+    assert not [e for e in entita if e.domain == "button"]
+
+
+async def test_prezzo_gas(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Prezzo per Smc dell'ultimo mese con tariffe, nello scaglione raggiunto quest'anno."""
+    from homeassistant.components.energy import validate
+
+    await _avvia(hass)
+    stato = _stato(hass, f"{CONTO_GAS}_prezzo_gas")
+    # consumi 2026 finti: 104 + 12 + 8 + 17 + 3 = 144 Smc → secondo scaglione
+    assert stato.attributes["scaglione"] == 2
+    assert stato.attributes["consumo_anno"] == 144
+    assert stato.attributes["mese_tariffa"] == "2026-07"
+    assert float(stato.state) == pytest.approx(1.4764, abs=0.001)
+    assert stato.attributes["unit_of_measurement"].endswith(validate.GAS_PRICE_UNITS)
+    assert (
+        er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{CONTO_LUCE}_prezzo_gas") is None
+    )

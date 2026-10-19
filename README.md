@@ -176,11 +176,14 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Bollette da pagare | ✅ | ✅ | Quante bollette hanno un importo da pagare |
 | Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
 | Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
+| Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo |
+| Prezzo gas | | ✅ | €/m³ del gas nello scaglione raggiunto quest'anno, IVA inclusa, senza quote fisse |
 | Lettura contatore | | ✅ | Ultima lettura (m³), con la data |
 | Prossima autolettura | | ✅ | Inizio della prossima finestra per l'autolettura |
 | Consumo annuo | | ✅ | Smc dell'anno, come riportato nell'ultima bolletta |
 | Bollette lette | | ✅ | Diagnostica: bollette PDF lette e periodi tariffari ricavati |
 | Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
+| Scarica le bollette | | | Pulsante, sul dispositivo dell'account: rilegge subito l'account e scarica le bollette mancanti |
 
 <details>
 <summary><b>Esempio di automazione: avviso per una bolletta da pagare</b></summary>
@@ -228,6 +231,21 @@ I valori sono **mensili** (registrati all'inizio di ogni mese, con lo storico
 dall'attivazione della fornitura): guardali per mese o per anno. Il mese in corso e i
 due precedenti vengono aggiornati a ogni lettura, così le stime vengono sostituite dai
 consumi reali.
+
+### 💶 Costi nel pannello Energia
+
+Nella configurazione di ogni sorgente scegli **"Utilizza un'entità con il prezzo corrente"**:
+
+| Sorgente | Entità da scegliere | Perché |
+|---|---|---|
+| ⚡ Luce | **Plenitude Luce · Prezzo medio** (€/kWh) | Importo dell'ultima bolletta diviso per i kWh fatturati: comprende energia, trasporto, oneri, quote fisse, imposte e IVA. Si aggiorna da solo a ogni bolletta. |
+| 🔥 Gas | **Plenitude Gas · Prezzo gas** (€/m³) | Prezzo reale del gas per lo scaglione raggiunto quest'anno. Il *prezzo medio* del gas non è adatto: d'estate le quote fisse lo gonfiano. |
+
+> [!NOTE]
+> Il solo PUN (prezzo all'ingrosso) copre circa metà del costo reale della luce: per
+> avere nel pannello la spesa vera usa il *Prezzo medio* di Plenitude. Per il gas il
+> pannello non può aggiungere le quote fisse mensili (circa 17 € al mese, IVA inclusa):
+> il costo mostrato è quello dei consumi.
 
 > [!IMPORTANT]
 > Per il gas puoi usare in alternativa il sensore **Lettura contatore** (m³, totale
@@ -303,6 +321,7 @@ l'integrazione riprova da sola senza chiederti nulla.
 | Richiesta di riautenticazione | La sessione è scaduta o revocata: inserisci di nuovo password e codice. |
 | L'integrazione va in *riprova* | Plenitude non raggiungibile: riprova da sola più tardi. |
 | *Bollette lette* resta a 0 | I PDF sono ancora in download (pochi minuti) o non sono bollette gas leggibili. |
+| Manca una bolletta o un prezzo | Premi **Scarica le bollette** sul dispositivo *Plenitude*: rilegge l'account e riprova i download. |
 | Una fornitura non c'è più | Il suo dispositivo diventa non disponibile: puoi eliminarlo dalla pagina del dispositivo. |
 | I prezzi non arrivano in MyItalgas | Verifica la fornitura MyItalgas nelle opzioni e che MyItalgas sia installato. |
 

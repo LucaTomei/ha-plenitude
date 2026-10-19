@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 1
+VERSIONE_LETTURA = 2
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -206,6 +206,11 @@ def _data_valida(anno: int, mese: int, giorno: int) -> date | None:
         return date(anno, mese, giorno)
     except ValueError:
         return None
+
+
+def periodo_fatturazione(testo: str) -> tuple[date, date] | None:
+    """Periodo di fatturazione di una bolletta Plenitude, di luce o di gas."""
+    return _periodo(testo)
 
 
 def _periodo(testo: str) -> tuple[date, date] | None:

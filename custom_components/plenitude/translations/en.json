@@ -97,6 +97,11 @@
     }
   },
   "entity": {
+    "button": {
+      "scarica_bollette": {
+        "name": "Download bills"
+      }
+    },
     "sensor": {
       "ultima_bolletta_importo": {
         "name": "Last bill amount",
@@ -198,6 +203,40 @@
           }
         }
       },
+      "prezzo_medio": {
+        "name": "Average price",
+        "state_attributes": {
+          "numero": {
+            "name": "Bill number"
+          },
+          "periodo_dal": {
+            "name": "Period from"
+          },
+          "periodo_al": {
+            "name": "Period to"
+          },
+          "consumo": {
+            "name": "Consumption"
+          },
+          "importo": {
+            "name": "Amount"
+          }
+        }
+      },
+      "prezzo_gas": {
+        "name": "Gas price",
+        "state_attributes": {
+          "scaglione": {
+            "name": "Consumption band"
+          },
+          "mese_tariffa": {
+            "name": "Tariff month"
+          },
+          "consumo_anno": {
+            "name": "Consumption this year"
+          }
+        }
+      },
       "lettura_contatore": {
         "name": "Meter reading",
         "state_attributes": {
@@ -228,6 +267,11 @@
       "ultimo_aggiornamento": {
         "name": "Last update"
       }
+    }
+  },
+  "exceptions": {
+    "aggiornamento_non_riuscito": {
+      "message": "Updating the Plenitude account failed. Try again later."
     }
   }
 }

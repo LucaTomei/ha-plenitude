@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from .bollette import Bolletta, PeriodoTariffario
+from .bollette import SOGLIE_SCAGLIONI, Bolletta, PeriodoTariffario
 
 GAS = "gas"
 LUCE = "luce"
@@ -40,6 +40,38 @@ class ConsumoMese:
     parziale: bool
 
 
+@dataclass(frozen=True, slots=True)
+class PrezzoMedio:
+    """Prezzo medio effettivo di una bolletta: importo totale diviso per il consumo."""
+
+    valore: float
+    numero: str
+    dal: date
+    al: date
+    consumo: float
+    importo: float
+
+
+@dataclass(frozen=True, slots=True)
+class PrezzoGas:
+    """Prezzo del gas per Smc nello scaglione annuo raggiunto, IVA inclusa (senza quote fisse)."""
+
+    valore: float
+    scaglione: int
+    mese: date
+    consumo_anno: float
+
+
+def mesi_del_periodo(dal: date, al: date) -> list[date]:
+    """Primo giorno di ogni mese toccato dal periodo."""
+    mesi = []
+    corrente = date(dal.year, dal.month, 1)
+    while corrente <= al:
+        mesi.append(corrente)
+        corrente = date(corrente.year + corrente.month // 12, corrente.month % 12 + 1, 1)
+    return mesi
+
+
 @dataclass(slots=True)
 class Conto:
     """Un conto Plenitude: una fornitura di luce o gas con bollette e consumi."""
@@ -62,6 +94,61 @@ class Conto:
     # dati letti dai PDF delle bollette gas
     bollette_pdf: list[Bolletta] = field(default_factory=list)
     periodi: list[PeriodoTariffario] = field(default_factory=list)
+    # periodo fatturato di ogni bolletta (luce e gas), letto dal PDF
+    periodi_bollette: dict[str, tuple[date, date]] = field(default_factory=dict)
+
+    @property
+    def prezzo_gas(self) -> PrezzoGas | None:
+        """Prezzo per Smc dell'ultimo periodo tariffario noto, nello scaglione attuale.
+
+        Lo scaglione dipende dai consumi dal 1° gennaio dell'anno dell'ultimo consumo
+        registrato: fino a 120 Smc il primo, fino a 480 il secondo, oltre il terzo.
+        """
+        if not self.periodi:
+            return None
+        periodo = self.periodi[-1]
+        anno = self.consumi[-1].mese.year if self.consumi else periodo.dal.year
+        consumo_anno = round(sum(c.valore for c in self.consumi if c.mese.year == anno), 3)
+        if consumo_anno <= SOGLIE_SCAGLIONI[0]:
+            scaglione, valore = 1, periodo.prezzo_sc1
+        elif consumo_anno <= SOGLIE_SCAGLIONI[1]:
+            scaglione, valore = 2, periodo.prezzo_sc2
+        else:
+            scaglione, valore = 3, periodo.prezzo_sc3
+        return PrezzoGas(
+            valore=round(valore, 4),
+            scaglione=scaglione,
+            mese=periodo.dal,
+            consumo_anno=consumo_anno,
+        )
+
+    @property
+    def prezzo_medio(self) -> PrezzoMedio | None:
+        """Prezzo medio dell'ultima bolletta di cui si conoscono periodo e consumi.
+
+        È l'importo totale (materia, trasporto, oneri, quote fisse, imposte e IVA) diviso
+        per i kWh o gli Smc consumati nei mesi fatturati: il costo reale di ogni unità.
+        """
+        consumi = {c.mese: c.valore for c in self.consumi}
+        for b in self.bollette:
+            periodo = self.periodi_bollette.get(b.numero)
+            if periodo is None or b.importo is None or b.importo <= 0:
+                continue
+            mesi = mesi_del_periodo(*periodo)
+            if not all(m in consumi for m in mesi):
+                continue
+            totale = sum(consumi[m] for m in mesi)
+            if totale <= 0:
+                continue
+            return PrezzoMedio(
+                valore=round(b.importo / totale, 4),
+                numero=b.numero,
+                dal=periodo[0],
+                al=periodo[1],
+                consumo=round(totale, 3),
+                importo=b.importo,
+            )
+        return None
 
     @property
     def ultima(self) -> BollettaConto | None:

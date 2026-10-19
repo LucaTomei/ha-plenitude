@@ -118,7 +118,9 @@ class ContoSensorDescription(SensorEntityDescription):
     attributi: Callable[[Conto], dict[str, Any] | None] = lambda _: None
     # tipi di fornitura per cui il sensore esiste
     forniture: frozenset[str] = frozenset({GAS, LUCE})
+    # per la luce: unità (al posto di quella del gas) e classe del sensore
     unita_luce: str | None = None
+    classe_luce: SensorDeviceClass | None = SensorDeviceClass.ENERGY
 
 
 def _iso(giorno: date | None) -> str | None:
@@ -160,6 +162,28 @@ def _attributi_consumo(conto: Conto) -> dict[str, Any] | None:
     attributi: dict[str, Any] = {"mese": c.mese.strftime("%Y-%m"), "parziale": c.parziale}
     attributi.update({f"fascia_{f.lower()}": v for f, v in c.fasce.items()})
     return attributi
+
+
+def _attributi_prezzo(conto: Conto) -> dict[str, Any] | None:
+    if (p := conto.prezzo_medio) is None:
+        return None
+    return {
+        "numero": p.numero,
+        "periodo_dal": p.dal.isoformat(),
+        "periodo_al": p.al.isoformat(),
+        "consumo": p.consumo,
+        "importo": p.importo,
+    }
+
+
+def _attributi_prezzo_gas(conto: Conto) -> dict[str, Any] | None:
+    if (p := conto.prezzo_gas) is None:
+        return None
+    return {
+        "scaglione": p.scaglione,
+        "mese_tariffa": p.mese.strftime("%Y-%m"),
+        "consumo_anno": p.consumo_anno,
+    }
 
 
 def _attributi_12_mesi(conto: Conto) -> dict[str, Any] | None:
@@ -225,6 +249,27 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
         suggested_display_precision=0,
         valore=lambda c: c.consumo_12_mesi,
         attributi=_attributi_12_mesi,
+    ),
+    ContoSensorDescription(
+        key="prezzo_medio",
+        translation_key="prezzo_medio",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfVolume.CUBIC_METERS}",
+        unita_luce=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
+        classe_luce=None,
+        suggested_display_precision=3,
+        valore=lambda c: c.prezzo_medio.valore if c.prezzo_medio else None,
+        attributi=_attributi_prezzo,
+    ),
+    ContoSensorDescription(
+        key="prezzo_gas",
+        translation_key="prezzo_gas",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfVolume.CUBIC_METERS}",
+        suggested_display_precision=3,
+        forniture=frozenset({GAS}),
+        valore=lambda c: c.prezzo_gas.valore if c.prezzo_gas else None,
+        attributi=_attributi_prezzo_gas,
     ),
     ContoSensorDescription(
         key="lettura_contatore",
@@ -325,7 +370,8 @@ class PlenitudeSensor(CoordinatorEntity[PlenitudeCoordinator], SensorEntity):
         return self.entity_description.attributi(self.coordinator.data)
 
 
-def _info_account(coordinator: PlenitudeAccountCoordinator) -> DeviceInfo:
+def info_account(coordinator: PlenitudeAccountCoordinator) -> DeviceInfo:
+    """Dispositivo che rappresenta l'account."""
     entry = coordinator.config_entry
     return DeviceInfo(
         identifiers={(DOMAIN, entry.entry_id)},
@@ -347,7 +393,7 @@ class UltimoAggiornamentoSensor(CoordinatorEntity[PlenitudeAccountCoordinator], 
         """Inizializza il sensore."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_ultimo_aggiornamento"
-        self._attr_device_info = _info_account(coordinator)
+        self._attr_device_info = info_account(coordinator)
 
     @property
     def native_value(self) -> datetime | None:
@@ -374,7 +420,8 @@ class ContoSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):
         self.entity_description = descrizione
         if conto.commodity == LUCE and descrizione.unita_luce:
             self._attr_native_unit_of_measurement = descrizione.unita_luce
-            self._attr_device_class = SensorDeviceClass.ENERGY
+            if descrizione.classe_luce:
+                self._attr_device_class = descrizione.classe_luce
         self._attr_unique_id = f"{codice}_{descrizione.key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, codice)},
