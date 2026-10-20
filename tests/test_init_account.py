@@ -437,7 +437,9 @@ async def test_prezzo_medio(hass: HomeAssistant, finto: FintoPlenitude) -> None:
 
     await _avvia(hass)
     luce = _stato(hass, f"{CONTO_LUCE}_prezzo_medio")
-    assert float(luce.state) == pytest.approx(328.78 / 470, abs=1e-4)
+    # totale della fornitura (310,78 €), senza i 18 € di canone RAI
+    assert float(luce.state) == pytest.approx(310.78 / 470, abs=1e-4)
+    assert luce.attributes["importo"] == 310.78
     assert luce.attributes["unit_of_measurement"] == "€/kWh"
     assert luce.attributes["unit_of_measurement"].endswith(validate.ENERGY_PRICE_UNITS)
     assert luce.attributes["periodo_dal"] == "2026-08-01"

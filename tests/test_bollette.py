@@ -244,6 +244,7 @@ def test_bolletta_luce() -> None:
     assert (b.dal, b.al) == (date(2026, 8, 1), date(2026, 9, 30))
     assert (b.emissione, b.scadenza) == (date(2026, 10, 9), date(2026, 11, 3))
     assert b.importo == 328.78
+    assert b.totale_fornitura == 310.78  # senza canone RAI
     assert (b.consumo_kwh, b.consumo_annuo_kwh) == (708, 2622)
     assert (b.potenza_impegnata, b.potenza_disponibile) == (3, 3.3)
     assert (b.consumo_quota_kwh, b.prezzo_quota_consumi, b.importo_quota_consumi) == (

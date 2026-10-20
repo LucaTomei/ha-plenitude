@@ -162,11 +162,15 @@ class Conto:
 
         È l'importo totale (materia, trasporto, oneri, quote fisse, imposte e IVA) diviso
         per i kWh o gli Smc consumati nei mesi fatturati: il costo reale di ogni unità.
+        Per la luce si usa il totale della fornitura, senza il canone RAI.
         """
         consumi = {c.mese: c.valore for c in self.consumi}
         for b in self.bollette:
             periodo = self.periodi_bollette.get(b.numero)
-            if periodo is None or b.importo is None or b.importo <= 0:
+            importo = b.importo
+            if (luce := self.bollette_luce.get(b.numero)) and luce.totale_fornitura:
+                importo = luce.totale_fornitura
+            if periodo is None or importo is None or importo <= 0:
                 continue
             mesi = mesi_del_periodo(*periodo)
             if not all(m in consumi for m in mesi):
@@ -175,12 +179,12 @@ class Conto:
             if totale <= 0:
                 continue
             return PrezzoMedio(
-                valore=round(b.importo / totale, 4),
+                valore=round(importo / totale, 4),
                 numero=b.numero,
                 dal=periodo[0],
                 al=periodo[1],
                 consumo=round(totale, 3),
-                importo=b.importo,
+                importo=importo,
             )
         return None
 

@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 3
+VERSIONE_LETTURA = 4
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -321,6 +321,10 @@ _RE_POTENZA = re.compile(r"(\d+(?:,\d+)?)\s*kW\s+(\d+(?:,\d+)?)\s*kW\b")
 _RE_QUOTA_CONSUMI = re.compile(r"QUOTA PER CONSUMI\s+([\d.]+)\s*kWh\s+([\d,]+)\s+([\d.,]+)\s*€")
 _RE_QUOTA_FISSA = re.compile(r"QUOTA FISSA\s+\d+\s+mes[ei]\s+([\d,]+)")
 _RE_QUOTA_POTENZA = re.compile(r"QUOTA POTENZA\s+[\d,]+\s*kW\s*x\s*\d+\s+mes[ei]\s+([\d,]+)")
+# totale della fornitura di luce, senza il canone RAI e le altre partite
+_RE_TOTALE_FORNITURA_LUCE = re.compile(
+    r"(?:Totale fornitura di luce e imposte|Totale bolletta salvo ricalcolo)\s+(-?[\d.,]+)\s*€"
+)
 _RE_IMPOSTE_LUCE = re.compile(r"Totale Imposte\s+(-?[\d.,]+)\s*€")
 _RE_LETTURA_LUCE = re.compile(
     r"(?:Rilevat[ao]|Stimat[ao]|Autolettura)[^\n]*?(\d{2}/\d{2}/\d{4})\s+(\d+)\s+(\d+)\s+(\d+)"
@@ -336,6 +340,7 @@ class BollettaLuce:
     emissione: date | None = None
     scadenza: date | None = None
     importo: float | None = None
+    totale_fornitura: float | None = None
     consumo_kwh: float | None = None
     consumo_annuo_kwh: float | None = None
     potenza_impegnata: float | None = None
@@ -373,6 +378,8 @@ def analizza_luce(testo: str) -> BollettaLuce | None:
     b.emissione, b.scadenza = _emissione_e_scadenza(testo)
     if m := _RE_TOTALE.search(testo):
         b.importo = _numero(m.group(1))
+    if m := _RE_TOTALE_FORNITURA_LUCE.search(testo):
+        b.totale_fornitura = _numero(m.group(1))
     if m := _RE_CONSUMO_LUCE.search(testo):
         b.consumo_kwh = _numero(m.group(1))
     if m := _RE_CONSUMO_ANNO_LUCE.search(testo):

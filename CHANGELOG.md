@@ -2,6 +2,13 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.5.1] - 2026-10-20
+
+### Correzioni
+
+- Il prezzo medio della luce non comprende più il canone RAI (era incluso nell'importo
+  della bolletta): ora è il totale della sola fornitura diviso per i kWh.
+
 ## [0.5.0] - 2026-10-20
 
 ### Novità
