@@ -85,6 +85,11 @@ class Conto:
     pod: str | None = None
     matricola: str | None = None
     prodotto: str | None = None
+    tipologia_offerta: str | None = None
+    mercato: str | None = None
+    condizioni_dal: date | None = None
+    condizioni_al: date | None = None
+    condizioni_scadute: bool | None = None
     bollette: list[BollettaConto] = field(default_factory=list)
     consumi: list[ConsumoMese] = field(default_factory=list)
     lettura: int | None = None
@@ -130,6 +135,37 @@ class Conto:
     def bollette_lette(self) -> int:
         """Quante bollette PDF sono state lette."""
         return len(self.bollette_pdf) if self.commodity == GAS else len(self.bollette_luce)
+
+    @property
+    def indici(self) -> dict[date, float]:
+        """Indice della materia prima applicato in ogni mese (PUN per la luce, PSV per il gas).
+
+        Per lo stesso mese vale la bolletta più recente (eventuali conguagli).
+        """
+        indici: dict[date, float] = {}
+        if self.commodity == GAS:
+            for b in sorted(self.bollette_pdf, key=lambda b: (b.al, b.emissione or b.al)):
+                for v in sorted(b.voci, key=lambda v: v.dal):
+                    if v.ruolo == "materia":
+                        indici[date(v.dal.year, v.dal.month, 1)] = v.prezzo
+        else:
+            for luce in sorted(self.bollette_luce.values(), key=lambda b: b.al):
+                indici.update(luce.indici)
+        return {m: indici[m] for m in sorted(indici)}
+
+    @property
+    def spread(self) -> float | None:
+        """Spread dell'offerta ("contributo al consumo") dell'ultima bolletta, €/kWh o €/Smc."""
+        if self.commodity == GAS:
+            pdf = self.ultima_pdf
+            contributi = (
+                sorted((v for v in pdf.voci if v.ruolo == "contributo"), key=lambda v: v.dal)
+                if pdf
+                else []
+            )
+            return contributi[-1].prezzo if contributi else None
+        luce = self.ultima_luce
+        return luce.contributo if luce else None
 
     @property
     def spese_mensili(self) -> dict[date, float]:
@@ -333,6 +369,12 @@ def aggiungi_fornitura(conto: Conto, forniture: list[dict[str, Any]]) -> None:
     )
     conto.matricola = fornitura.get("matricolaContatore")
     conto.prodotto = fornitura.get("prodotto")
+    conto.tipologia_offerta = fornitura.get("tipologiaOfferta")
+    conto.mercato = fornitura.get("tipoMercato")
+    conto.condizioni_dal = _data(fornitura.get("dataInizioValiditaCE"))
+    conto.condizioni_al = _data(fornitura.get("dataFineValiditaCE"))
+    scadute = fornitura.get("ceScadute")
+    conto.condizioni_scadute = scadute if isinstance(scadute, bool) else None
 
 
 def bollette_da(elenco: list[dict[str, Any]]) -> list[BollettaConto]:

@@ -88,6 +88,11 @@ FORNITURE: dict[str, list[dict[str, Any]]] = {
             "matricolaContatore": "MAT0000000002",
             "prodotto": "Offerta Luce di prova",
             "status": "ATTIVO",
+            "tipologiaOfferta": "VARIABILE",
+            "tipoMercato": "LIBERO",
+            "dataInizioValiditaCE": "01/04/2023",
+            "dataFineValiditaCE": "01/04/2025",
+            "ceScadute": True,
         }
     ],
 }

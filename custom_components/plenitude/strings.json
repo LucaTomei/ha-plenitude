@@ -343,6 +343,57 @@
             "name": "Last 12 months total"
           }
         }
+      },
+      "pun": {
+        "name": "PUN",
+        "state_attributes": {
+          "mese": {
+            "name": "Month"
+          },
+          "mesi": {
+            "name": "Monthly values"
+          },
+          "spread": {
+            "name": "Spread (€/kWh)"
+          },
+          "dispacciamento": {
+            "name": "Dispatching (€/kWh)"
+          }
+        }
+      },
+      "indice_gas": {
+        "name": "Gas index (PSV)",
+        "state_attributes": {
+          "mese": {
+            "name": "Month"
+          },
+          "mesi": {
+            "name": "Monthly values"
+          },
+          "spread": {
+            "name": "Spread (€/Smc)"
+          }
+        }
+      },
+      "offerta": {
+        "name": "Offer",
+        "state_attributes": {
+          "tipologia": {
+            "name": "Offer type"
+          },
+          "mercato": {
+            "name": "Market"
+          },
+          "condizioni_dal": {
+            "name": "Economic conditions from"
+          },
+          "condizioni_al": {
+            "name": "Economic conditions until"
+          },
+          "condizioni_scadute": {
+            "name": "Economic conditions expired"
+          }
+        }
       }
     }
   },

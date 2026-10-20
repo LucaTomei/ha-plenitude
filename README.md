@@ -178,6 +178,9 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
 | Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo |
 | Prezzo energia | ✅ | | €/kWh dei consumi con accise e IVA, senza quota fissa, quota potenza e canone |
+| PUN | ✅ | | PUN applicato in bolletta nell'ultimo mese fatturato (€/kWh), con lo storico dei mesi, lo spread e il dispacciamento |
+| Indice gas (PSV) | | ✅ | Indice del gas applicato in bolletta nell'ultimo mese fatturato (€/Smc), con lo storico dei mesi e lo spread |
+| Offerta | ✅ | ✅ | Nome dell'offerta; negli attributi tipo, mercato e validità delle condizioni economiche (anche se scadute) |
 | Prezzo gas | | ✅ | €/m³ del gas nello scaglione raggiunto quest'anno, IVA inclusa, senza quote fisse |
 | Consumo ultima bolletta | ✅ | ✅ | kWh o Smc fatturati nell'ultima bolletta |
 | Consumo annuo | ✅ | ✅ | kWh o Smc dell'ultimo anno, come riportato nell'ultima bolletta |

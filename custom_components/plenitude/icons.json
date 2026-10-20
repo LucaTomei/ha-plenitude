@@ -65,6 +65,15 @@
       },
       "spesa_totale_ultimo_mese": {
         "default": "mdi:cash-register"
+      },
+      "pun": {
+        "default": "mdi:chart-line"
+      },
+      "indice_gas": {
+        "default": "mdi:chart-line-variant"
+      },
+      "offerta": {
+        "default": "mdi:file-sign"
       }
     }
   }

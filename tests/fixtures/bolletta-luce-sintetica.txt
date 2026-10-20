@@ -44,6 +44,13 @@ Elementi di dettaglio Luce
 Corrispettivo Luce Index tipo prezzo prezzo kWh € regime iva
 DAL 01/08/2026 AL 31/08/2026 €/kWh 0,17999900 468 84,24 AGE
 DAL 01/09/2026 AL 30/09/2026 €/kWh 0,20754200 240 49,81 AGE
+Contributo al consumo tipo prezzo prezzo kWh € regime iva
+DAL 01/08/2026 AL 31/08/2026 €/kWh 0,04100000 468 19,19 AGE
+DAL 01/09/2026 AL 30/09/2026 €/kWh 0,04100000 240 9,84 AGE
+Dispacciamento tipo prezzo prezzo kWh € regime iva
+DAL 01/08/2026 AL 31/08/2026 €/kWh 0,02556000 468 11,96 AGE
+DAL 01/09/2026 AL 30/09/2026 €/kWh 0,02556000 240 6,13 AGE
+Totale 219,70 €
 Totale netto IVA 282,53 €
 Totale fornitura di luce e imposte 310,78 €
 Totale bolletta salvo ricalcolo 310,78 €

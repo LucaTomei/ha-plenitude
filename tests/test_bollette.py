@@ -257,6 +257,8 @@ def test_bolletta_luce() -> None:
     assert b.letture == {"F1": 3526, "F2": 2150, "F3": 3158}
     assert b.lettura_totale == 3526 + 2150 + 3158
     assert b.prezzo_energia == round((231.42 + 13.23) * 1.10 / 708, 4)
+    assert b.indici == {date(2026, 8, 1): 0.179999, date(2026, 9, 1): 0.207542}
+    assert (b.contributo, b.dispacciamento) == (0.041, 0.02556)
     assert bollette.bolletta_luce_da_dict(bollette.bolletta_luce_a_dict(b)) == b
     # una bolletta luce non è una bolletta gas, e viceversa
     assert bollette.analizza(_testo("bolletta-luce-sintetica.txt")) is None

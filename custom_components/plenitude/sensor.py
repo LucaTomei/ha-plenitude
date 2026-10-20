@@ -172,6 +172,37 @@ def _ultima_spesa(spese: dict[date, float]) -> float | None:
     return spese[max(spese)] if spese else None
 
 
+def _attributi_indice(conto: Conto) -> dict[str, Any] | None:
+    """Mese dell'ultimo indice, storico degli ultimi 12 mesi, spread e dispacciamento."""
+    indici = conto.indici
+    if not indici:
+        return None
+    mesi = sorted(indici)[-12:]
+    attributi: dict[str, Any] = {
+        "mese": mesi[-1].strftime("%Y-%m"),
+        "mesi": {m.strftime("%Y-%m"): indici[m] for m in mesi},
+        "spread": conto.spread,
+    }
+    if (luce := conto.ultima_luce) is not None and luce.dispacciamento is not None:
+        attributi["dispacciamento"] = luce.dispacciamento
+    return attributi
+
+
+def _ultimo_indice(conto: Conto) -> float | None:
+    indici = conto.indici
+    return indici[max(indici)] if indici else None
+
+
+def _attributi_offerta(conto: Conto) -> dict[str, Any]:
+    return {
+        "tipologia": conto.tipologia_offerta,
+        "mercato": conto.mercato,
+        "condizioni_dal": _iso(conto.condizioni_dal),
+        "condizioni_al": _iso(conto.condizioni_al),
+        "condizioni_scadute": conto.condizioni_scadute,
+    }
+
+
 def _attributi_lettura(conto: Conto) -> dict[str, Any]:
     attributi: dict[str, Any] = {"data_lettura": _iso(conto.data_lettura)}
     attributi.update({f"fascia_{f.lower()}": v for f, v in conto.letture_fasce.items()})
@@ -323,6 +354,32 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
         suggested_display_precision=2,
         valore=lambda c: _ultima_spesa(c.spese_mensili),
         attributi=lambda c: _attributi_spese(c.spese_mensili),
+    ),
+    ContoSensorDescription(
+        key="pun",
+        translation_key="pun",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
+        suggested_display_precision=4,
+        forniture=frozenset({LUCE}),
+        valore=_ultimo_indice,
+        attributi=_attributi_indice,
+    ),
+    ContoSensorDescription(
+        key="indice_gas",
+        translation_key="indice_gas",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UNITA_SMC}",
+        suggested_display_precision=4,
+        forniture=frozenset({GAS}),
+        valore=_ultimo_indice,
+        attributi=_attributi_indice,
+    ),
+    ContoSensorDescription(
+        key="offerta",
+        translation_key="offerta",
+        valore=lambda c: c.prodotto,
+        attributi=_attributi_offerta,
     ),
     ContoSensorDescription(
         key="prezzo_medio",

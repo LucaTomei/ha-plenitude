@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 5
+VERSIONE_LETTURA = 6
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -80,6 +80,8 @@ _MESI: dict[str, int] = {
 # Intestazioni delle voci di dettaglio -> (ruolo, è una quota fissa).
 _COMPONENTI: dict[str, tuple[str, bool]] = {
     "Corrispettivo Gas Index": ("materia", False),
+    "Corrispettivo Luce Index": ("indice_luce", False),
+    "Dispacciamento": ("dispacciamento", False),
     "Contributo al consumo": ("contributo", False),
     "Quota Energia (distribuzione)": ("distribuzione", False),
     "Quota Energia (trasporto)": ("trasporto", False),
@@ -358,6 +360,11 @@ class BollettaLuce:
     imposte: float | None = None
     data_lettura: date | None = None
     letture: dict[str, int] = field(default_factory=dict)
+    # indice della materia prima (PUN) applicato in ogni mese, €/kWh
+    indici: dict[date, float] = field(default_factory=dict)
+    # spread ("contributo al consumo") e dispacciamento dell'ultimo mese, €/kWh
+    contributo: float | None = None
+    dispacciamento: float | None = None
 
     @property
     def prezzo_energia(self) -> float | None:
@@ -410,6 +417,13 @@ def analizza_luce(testo: str) -> BollettaLuce | None:
         b.imposte = _numero(m[1])
     if m := _RE_CANONE_RAI.search(testo):
         b.canone_rai = _numero(m[1])
+    voci = sorted(_voci(testo), key=lambda v: v.dal)
+    b.indici = {_primo_del_mese(v.dal): v.prezzo for v in voci if v.ruolo == "indice_luce"}
+    for v in voci:
+        if v.ruolo == "contributo":
+            b.contributo = v.prezzo
+        elif v.ruolo == "dispacciamento":
+            b.dispacciamento = v.prezzo
     letture = [(_data(m[1]), m) for m in _RE_LETTURA_LUCE.finditer(testo)]
     if letture:
         giorno, m = max(letture, key=lambda x: x[0])
@@ -423,6 +437,7 @@ def bolletta_luce_a_dict(b: BollettaLuce) -> dict[str, Any]:
     dati = {nome: getattr(b, nome) for nome in BollettaLuce.__slots__}
     for nome in ("dal", "al", "emissione", "scadenza", "data_lettura"):
         dati[nome] = dati[nome].isoformat() if dati[nome] else None
+    dati["indici"] = {mese.isoformat(): valore for mese, valore in b.indici.items()}
     return dati
 
 
@@ -434,6 +449,9 @@ def bolletta_luce_da_dict(dati: dict[str, Any]) -> BollettaLuce:
     if valori["dal"] is None or valori["al"] is None:
         raise ValueError("periodo assente")
     valori["letture"] = {k: int(v) for k, v in (valori["letture"] or {}).items()}
+    valori["indici"] = {
+        date.fromisoformat(mese): float(valore) for mese, valore in (valori["indici"] or {}).items()
+    }
     return BollettaLuce(**valori)
 
 

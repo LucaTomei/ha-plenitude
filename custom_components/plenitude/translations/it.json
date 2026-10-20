@@ -343,6 +343,57 @@
             "name": "Totale ultimi 12 mesi"
           }
         }
+      },
+      "pun": {
+        "name": "PUN",
+        "state_attributes": {
+          "mese": {
+            "name": "Mese"
+          },
+          "mesi": {
+            "name": "Valori mensili"
+          },
+          "spread": {
+            "name": "Spread (€/kWh)"
+          },
+          "dispacciamento": {
+            "name": "Dispacciamento (€/kWh)"
+          }
+        }
+      },
+      "indice_gas": {
+        "name": "Indice gas (PSV)",
+        "state_attributes": {
+          "mese": {
+            "name": "Mese"
+          },
+          "mesi": {
+            "name": "Valori mensili"
+          },
+          "spread": {
+            "name": "Spread (€/Smc)"
+          }
+        }
+      },
+      "offerta": {
+        "name": "Offerta",
+        "state_attributes": {
+          "tipologia": {
+            "name": "Tipologia"
+          },
+          "mercato": {
+            "name": "Mercato"
+          },
+          "condizioni_dal": {
+            "name": "Condizioni economiche dal"
+          },
+          "condizioni_al": {
+            "name": "Condizioni economiche fino al"
+          },
+          "condizioni_scadute": {
+            "name": "Condizioni economiche scadute"
+          }
+        }
       }
     }
   },

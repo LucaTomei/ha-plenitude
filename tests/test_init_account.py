@@ -571,3 +571,26 @@ async def test_spesa_mensile(hass: HomeAssistant, finto: FintoPlenitude) -> None
         luce.attributes["mesi"]["2026-07"] + float(gas.state), abs=0.01
     )
     assert "2026-09" not in totale.attributes["mesi"]
+
+
+async def test_indici_e_offerta(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """PUN e indice del gas applicati mese per mese, con lo spread; dati dell'offerta."""
+    await _avvia(hass)
+    pun = _stato(hass, f"{CONTO_LUCE}_pun")
+    assert float(pun.state) == pytest.approx(0.207542)
+    assert pun.attributes["mese"] == "2026-09"
+    assert pun.attributes["mesi"]["2026-08"] == pytest.approx(0.179999)
+    assert pun.attributes["spread"] == pytest.approx(0.041)
+    assert pun.attributes["dispacciamento"] == pytest.approx(0.02556)
+    assert pun.attributes["unit_of_measurement"] == "€/kWh"
+    gas = _stato(hass, f"{CONTO_GAS}_indice_gas")
+    assert gas.attributes["mese"] == "2026-07"
+    assert gas.attributes["unit_of_measurement"] == "€/Smc"
+    assert gas.attributes["spread"] is not None
+    assert "2026-07" in gas.attributes["mesi"]
+    assert len(gas.attributes["mesi"]) <= 12
+    offerta = _stato(hass, f"{CONTO_LUCE}_offerta")
+    assert offerta.state == "Offerta Luce di prova"
+    assert offerta.attributes["tipologia"] == "VARIABILE"
+    assert offerta.attributes["condizioni_al"] == "2025-04-01"
+    assert offerta.attributes["condizioni_scadute"] is True

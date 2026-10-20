@@ -2,6 +2,16 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.7.0] - 2026-10-20
+
+### Novità
+
+- **PUN** applicato in bolletta, mese per mese, con lo spread dell'offerta e il
+  dispacciamento.
+- **Indice gas (PSV)** applicato in bolletta, mese per mese, con lo spread dell'offerta.
+- **Offerta**: nome, tipo, mercato e validità delle condizioni economiche, con
+  l'indicazione se sono scadute.
+
 ## [0.6.0] - 2026-10-20
 
 ### Novità
