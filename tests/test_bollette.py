@@ -235,3 +235,38 @@ def test_cache_andata_e_ritorno(nome: str) -> None:
     """La forma salvata nella cache ricostruisce la stessa bolletta."""
     b = bollette.analizza(_testo(nome))
     assert bollette.bolletta_da_dict(bollette.bolletta_a_dict(b)) == b
+
+
+def test_bolletta_luce() -> None:
+    """Dati della bolletta luce: consumi, potenza, quote, imposte e letture per fascia."""
+    b = bollette.analizza_luce(_testo("bolletta-luce-sintetica.txt"))
+    assert b is not None
+    assert (b.dal, b.al) == (date(2026, 8, 1), date(2026, 9, 30))
+    assert (b.emissione, b.scadenza) == (date(2026, 10, 9), date(2026, 11, 3))
+    assert b.importo == 328.78
+    assert (b.consumo_kwh, b.consumo_annuo_kwh) == (708, 2622)
+    assert (b.potenza_impegnata, b.potenza_disponibile) == (3, 3.3)
+    assert (b.consumo_quota_kwh, b.prezzo_quota_consumi, b.importo_quota_consumi) == (
+        708,
+        0.326864,
+        231.42,
+    )
+    assert (b.quota_fissa_mese, b.quota_potenza_kw_mese, b.imposte) == (13.01, 1.976667, 13.23)
+    assert b.data_lettura == date(2026, 9, 30)
+    assert b.letture == {"F1": 3526, "F2": 2150, "F3": 3158}
+    assert b.lettura_totale == 3526 + 2150 + 3158
+    assert b.prezzo_energia == round((231.42 + 13.23) * 1.10 / 708, 4)
+    assert bollette.bolletta_luce_da_dict(bollette.bolletta_luce_a_dict(b)) == b
+    # una bolletta luce non è una bolletta gas, e viceversa
+    assert bollette.analizza(_testo("bolletta-luce-sintetica.txt")) is None
+    assert bollette.analizza_luce(_testo("bolletta-gas-20260828.txt")) is None
+
+
+def test_bolletta_luce_incompleta() -> None:
+    """Se mancano dei riquadri la bolletta si legge lo stesso, con i soli dati presenti."""
+    testo = "Periodo di fatturazione: dal 01/08/2026 al 30/09/2026\nElementi di dettaglio Luce\n"
+    b = bollette.analizza_luce(testo)
+    assert b is not None
+    assert b.consumo_kwh is None
+    assert b.prezzo_energia is None
+    assert b.lettura_totale is None

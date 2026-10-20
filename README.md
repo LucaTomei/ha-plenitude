@@ -168,7 +168,7 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 
 | Entità | 💡 Luce | 🔥 Gas | Descrizione |
 |---|:---:|:---:|---|
-| Importo ultima bolletta | ✅ | ✅ | € dell'ultima bolletta; negli attributi numero, scadenza, stato e metodo di pagamento |
+| Importo ultima bolletta | ✅ | ✅ | € dell'ultima bolletta; negli attributi numero, periodo, consumo, scadenza, stato e metodo di pagamento |
 | Scadenza ultima bolletta | ✅ | ✅ | Data di scadenza |
 | Emissione ultima bolletta | ✅ | ✅ | Data di emissione |
 | Da pagare | ✅ | ✅ | Totale ancora da pagare; negli attributi le bollette e la prossima scadenza |
@@ -176,11 +176,14 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
 | Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
 | Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo |
+| Prezzo energia | ✅ | | €/kWh dei consumi con accise e IVA, senza quota fissa, quota potenza e canone |
 | Prezzo gas | | ✅ | €/m³ del gas nello scaglione raggiunto quest'anno, IVA inclusa, senza quote fisse |
-| Lettura contatore | | ✅ | Ultima lettura (m³), con la data |
+| Consumo ultima bolletta | ✅ | ✅ | kWh o Smc fatturati nell'ultima bolletta |
+| Consumo annuo | ✅ | ✅ | kWh o Smc dell'ultimo anno, come riportato nell'ultima bolletta |
+| Lettura contatore | ✅ | ✅ | Ultima lettura (kWh, anche per fascia F1/F2/F3, oppure m³), con la data |
+| Potenza impegnata | ✅ | | kW del contratto; negli attributi la potenza disponibile e la quota potenza |
 | Prossima autolettura | | ✅ | Inizio della prossima finestra per l'autolettura |
-| Consumo annuo | | ✅ | Smc dell'anno, come riportato nell'ultima bolletta |
-| Bollette lette | | ✅ | Diagnostica: bollette PDF lette e periodi tariffari ricavati |
+| Bollette lette | ✅ | ✅ | Diagnostica: bollette PDF lette (per il gas anche i periodi tariffari ricavati) |
 | Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
 | Scarica le bollette | | | Pulsante, sul dispositivo dell'account: rilegge subito l'account e scarica le bollette mancanti |
 
@@ -237,7 +240,7 @@ Nella configurazione di ogni sorgente scegli **"Utilizza un'entità con il prezz
 
 | Sorgente | Entità da scegliere | Perché |
 |---|---|---|
-| ⚡ Luce | **Plenitude Luce · Prezzo medio** (€/kWh) | Importo dell'ultima bolletta diviso per i kWh fatturati: comprende energia, trasporto, oneri, quote fisse, imposte e IVA. Si aggiorna da solo a ogni bolletta. |
+| ⚡ Luce | **Plenitude Luce · Prezzo medio** (€/kWh) | Importo dell'ultima bolletta diviso per i kWh fatturati: comprende energia, trasporto, oneri, quote fisse, imposte e IVA, quindi il totale nel pannello si avvicina alla bolletta. Se vuoi vedere solo il costo dei consumi usa invece **Prezzo energia**. |
 | 🔥 Gas | **Plenitude Gas · Prezzo gas** (€/m³) | Prezzo reale del gas per lo scaglione raggiunto quest'anno. Il *prezzo medio* del gas non è adatto: d'estate le quote fisse lo gonfiano. |
 
 > [!NOTE]

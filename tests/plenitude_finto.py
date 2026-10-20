@@ -131,11 +131,7 @@ PDF_GAS: dict[str, str] = {
 
 # PDF (testo) delle bollette luce: serve solo il periodo fatturato
 PDF_LUCE: dict[str, str] = {
-    "9100000002": (
-        "Bolletta luce\nPeriodo di fatturazione: dal 01/08/2026 al 30/09/2026\n"
-        "Totale da pagare 328,78 € Indice di riferimento: PUN Index GME\n"
-        "Elementi di dettaglio Luce\n"
-    ),
+    "9100000002": (FIXTURES / "bolletta-luce-sintetica.txt").read_text(encoding="utf-8"),
 }
 
 

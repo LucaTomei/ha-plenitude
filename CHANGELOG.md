@@ -2,6 +2,18 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.5.0] - 2026-10-20
+
+### Novità
+
+- Le bollette della luce vengono lette come quelle del gas: consumo e periodo dell'ultima
+  bolletta, consumo annuo, lettura del contatore (anche per fascia F1/F2/F3), potenza
+  impegnata e numero di bollette lette.
+- **Prezzo energia** della luce: €/kWh dei consumi con accise e IVA, senza quote fisse,
+  quota potenza e canone.
+- **Consumo ultima bolletta** anche per il gas.
+- Torna il logo di Plenitude nell'elenco delle integrazioni.
+
 ## [0.4.1] - 2026-10-19
 
 - Indicato in modo più evidente (README, HACS, configurazione) che l'integrazione è un

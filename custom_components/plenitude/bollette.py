@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 2
+VERSIONE_LETTURA = 3
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -293,19 +293,127 @@ def analizza(testo: str) -> Bolletta | None:
         bolletta.importo = _numero(m.group(1))
     if m := _RE_CONSUMO_ANNO.search(testo):
         bolletta.consumo_annuo_smc = int(m.group(1))
+    bolletta.emissione, bolletta.scadenza = _emissione_e_scadenza(testo)
+    bolletta.voci = _voci(testo)
+    return bolletta
+
+
+def _emissione_e_scadenza(testo: str) -> tuple[date | None, date | None]:
+    emissione: date | None = None
     if m := _RE_EMISSIONE.search(testo):
-        bolletta.emissione = _data(m.group(1))
+        emissione = _data(m.group(1))
     elif m := _RE_EMISSIONE_PUNTI.search(testo):
-        bolletta.emissione = _data_valida(int(m[3]), int(m[2]), int(m[1]))
+        emissione = _data_valida(int(m[3]), int(m[2]), int(m[1]))
     # le pagine informative possono riportare una scadenza d'esempio: si sceglie la prima
     # non precedente all'emissione
     scadenze = [_data(m.group(1)) for m in _RE_SCADENZA.finditer(testo)]
-    if bolletta.emissione is not None:
-        scadenze = [d for d in scadenze if d >= bolletta.emissione] or scadenze
-    if scadenze:
-        bolletta.scadenza = scadenze[0]
-    bolletta.voci = _voci(testo)
-    return bolletta
+    if emissione is not None:
+        scadenze = [d for d in scadenze if d >= emissione] or scadenze
+    return emissione, (scadenze[0] if scadenze else None)
+
+
+# --- Bollette luce -------------------------------------------------------------------
+
+_RE_DETTAGLIO_LUCE = re.compile(r"Elementi di dettaglio luce", re.I)
+_RE_CONSUMO_LUCE = re.compile(r"Consumo fatturato\s+(?:[\d.]+\s+){3}([\d.]+)")
+_RE_CONSUMO_ANNO_LUCE = re.compile(r"In un anno hai consumato\s*([\d.]+)\s*kWh", re.I)
+_RE_POTENZA = re.compile(r"(\d+(?:,\d+)?)\s*kW\s+(\d+(?:,\d+)?)\s*kW\b")
+_RE_QUOTA_CONSUMI = re.compile(r"QUOTA PER CONSUMI\s+([\d.]+)\s*kWh\s+([\d,]+)\s+([\d.,]+)\s*€")
+_RE_QUOTA_FISSA = re.compile(r"QUOTA FISSA\s+\d+\s+mes[ei]\s+([\d,]+)")
+_RE_QUOTA_POTENZA = re.compile(r"QUOTA POTENZA\s+[\d,]+\s*kW\s*x\s*\d+\s+mes[ei]\s+([\d,]+)")
+_RE_IMPOSTE_LUCE = re.compile(r"Totale Imposte\s+(-?[\d.,]+)\s*€")
+_RE_LETTURA_LUCE = re.compile(
+    r"(?:Rilevat[ao]|Stimat[ao]|Autolettura)[^\n]*?(\d{2}/\d{2}/\d{4})\s+(\d+)\s+(\d+)\s+(\d+)"
+)
+
+
+@dataclass(slots=True)
+class BollettaLuce:
+    """Dati estratti da una bolletta luce Plenitude."""
+
+    dal: date
+    al: date
+    emissione: date | None = None
+    scadenza: date | None = None
+    importo: float | None = None
+    consumo_kwh: float | None = None
+    consumo_annuo_kwh: float | None = None
+    potenza_impegnata: float | None = None
+    potenza_disponibile: float | None = None
+    # riepilogo "quota per consumi" (IVA esclusa): kWh, €/kWh medio, importo
+    consumo_quota_kwh: float | None = None
+    prezzo_quota_consumi: float | None = None
+    importo_quota_consumi: float | None = None
+    quota_fissa_mese: float | None = None
+    quota_potenza_kw_mese: float | None = None
+    imposte: float | None = None
+    data_lettura: date | None = None
+    letture: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def prezzo_energia(self) -> float | None:
+        """€/kWh dei consumi con accise e IVA, senza quote fisse, quota potenza e canone."""
+        if not self.importo_quota_consumi or not self.consumo_quota_kwh:
+            return None
+        variabile = self.importo_quota_consumi + (self.imposte or 0.0)
+        return round(variabile * IVA_AGEVOLATA / self.consumo_quota_kwh, 4)
+
+    @property
+    def lettura_totale(self) -> int | None:
+        """Lettura del contatore: somma delle tre fasce."""
+        return sum(self.letture.values()) if self.letture else None
+
+
+def analizza_luce(testo: str) -> BollettaLuce | None:
+    """Estrae i dati da una bolletta luce. None se non è una bolletta luce Plenitude."""
+    periodo = _periodo(testo)
+    if periodo is None or not _RE_DETTAGLIO_LUCE.search(testo):
+        return None
+    b = BollettaLuce(dal=periodo[0], al=periodo[1])
+    b.emissione, b.scadenza = _emissione_e_scadenza(testo)
+    if m := _RE_TOTALE.search(testo):
+        b.importo = _numero(m.group(1))
+    if m := _RE_CONSUMO_LUCE.search(testo):
+        b.consumo_kwh = _numero(m.group(1))
+    if m := _RE_CONSUMO_ANNO_LUCE.search(testo):
+        b.consumo_annuo_kwh = _numero(m.group(1))
+    if m := _RE_POTENZA.search(testo):
+        b.potenza_impegnata, b.potenza_disponibile = _numero(m[1]), _numero(m[2])
+    if m := _RE_QUOTA_CONSUMI.search(testo):
+        b.consumo_quota_kwh = _numero(m[1])
+        b.prezzo_quota_consumi = _numero(m[2])
+        b.importo_quota_consumi = _numero(m[3])
+    if m := _RE_QUOTA_FISSA.search(testo):
+        b.quota_fissa_mese = _numero(m[1])
+    if m := _RE_QUOTA_POTENZA.search(testo):
+        b.quota_potenza_kw_mese = _numero(m[1])
+    if m := _RE_IMPOSTE_LUCE.search(testo):
+        b.imposte = _numero(m[1])
+    letture = [(_data(m[1]), m) for m in _RE_LETTURA_LUCE.finditer(testo)]
+    if letture:
+        giorno, m = max(letture, key=lambda x: x[0])
+        b.data_lettura = giorno
+        b.letture = {"F1": int(m[2]), "F2": int(m[3]), "F3": int(m[4])}
+    return b
+
+
+def bolletta_luce_a_dict(b: BollettaLuce) -> dict[str, Any]:
+    """Bolletta luce in forma serializzabile (per la cache delle bollette già lette)."""
+    dati = {nome: getattr(b, nome) for nome in BollettaLuce.__slots__}
+    for nome in ("dal", "al", "emissione", "scadenza", "data_lettura"):
+        dati[nome] = dati[nome].isoformat() if dati[nome] else None
+    return dati
+
+
+def bolletta_luce_da_dict(dati: dict[str, Any]) -> BollettaLuce:
+    """Bolletta luce dalla forma serializzata."""
+    valori = {nome: dati.get(nome) for nome in BollettaLuce.__slots__}
+    for nome in ("dal", "al", "emissione", "scadenza", "data_lettura"):
+        valori[nome] = date.fromisoformat(valori[nome]) if valori[nome] else None
+    if valori["dal"] is None or valori["al"] is None:
+        raise ValueError("periodo assente")
+    valori["letture"] = {k: int(v) for k, v in (valori["letture"] or {}).items()}
+    return BollettaLuce(**valori)
 
 
 # Voci uguali su tutti gli scaglioni (cambiano solo nel tempo); le altre variano anche

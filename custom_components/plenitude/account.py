@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from .bollette import SOGLIE_SCAGLIONI, Bolletta, PeriodoTariffario
+from .bollette import SOGLIE_SCAGLIONI, Bolletta, BollettaLuce, PeriodoTariffario
 
 GAS = "gas"
 LUCE = "luce"
@@ -96,6 +96,40 @@ class Conto:
     periodi: list[PeriodoTariffario] = field(default_factory=list)
     # periodo fatturato di ogni bolletta (luce e gas), letto dal PDF
     periodi_bollette: dict[str, tuple[date, date]] = field(default_factory=dict)
+    # dati letti dai PDF delle bollette luce, per numero di bolletta
+    bollette_luce: dict[str, BollettaLuce] = field(default_factory=dict)
+    # lettura del contatore della luce per fascia (dall'ultima bolletta)
+    letture_fasce: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def ultima_luce(self) -> BollettaLuce | None:
+        """Bolletta luce letta dal PDF più recente."""
+        if not self.bollette_luce:
+            return None
+        return max(self.bollette_luce.values(), key=lambda b: (b.al, b.emissione or b.al))
+
+    @property
+    def consumo_ultima_bolletta(self) -> float | None:
+        """kWh o Smc fatturati nell'ultima bolletta letta dal PDF."""
+        if self.commodity == GAS:
+            pdf = self.ultima_pdf
+            return pdf.consumo_smc if pdf else None
+        luce = self.ultima_luce
+        return luce.consumo_kwh if luce else None
+
+    @property
+    def consumo_annuo(self) -> float | None:
+        """Consumo annuo riportato nell'ultima bolletta."""
+        if self.commodity == GAS:
+            pdf = self.ultima_pdf
+            return pdf.consumo_annuo_smc if pdf else None
+        luce = self.ultima_luce
+        return luce.consumo_annuo_kwh if luce else None
+
+    @property
+    def bollette_lette(self) -> int:
+        """Quante bollette PDF sono state lette."""
+        return len(self.bollette_pdf) if self.commodity == GAS else len(self.bollette_luce)
 
     @property
     def prezzo_gas(self) -> PrezzoGas | None:
@@ -309,6 +343,19 @@ def consumi_da(forniture: list[dict[str, Any]], tipo: str | None) -> list[Consum
             parziale=bool(voce.get("isPartial")),
         )
     return [mesi[m] for m in sorted(mesi)]
+
+
+def aggiungi_lettura_luce(conto: Conto) -> None:
+    """Lettura del contatore della luce dall'ultima bolletta, se l'area clienti non la dà."""
+    luce = conto.ultima_luce
+    if luce is None or not luce.letture:
+        return
+    conto.letture_fasce = dict(luce.letture)
+    if conto.lettura is None or (
+        conto.data_lettura and luce.data_lettura and luce.data_lettura > conto.data_lettura
+    ):
+        conto.lettura = luce.lettura_totale
+        conto.data_lettura = luce.data_lettura
 
 
 def aggiungi_autolettura(conto: Conto, dati: dict[str, Any] | None) -> None:

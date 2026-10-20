@@ -28,8 +28,8 @@ CARTELLA_BOLLETTE_DEFAULT: Final = "plenitude/bollette"
 CARTELLA_ARCHIVIO: Final = "plenitude/archivio"
 # Quante bollette gas al massimo scaricare per costruire lo storico dei prezzi.
 MAX_BOLLETTE_PDF: Final = 24
-# Delle bollette luce serve solo il periodo fatturato (per il prezzo medio): bastano le ultime.
-MAX_BOLLETTE_PDF_LUCE: Final = 3
+# Delle bollette luce servono solo le più recenti (dati dell'ultima bolletta e prezzi).
+MAX_BOLLETTE_PDF_LUCE: Final = 6
 
 # IVA: agevolata (consumi) e ordinaria (quote fisse e consumi oltre 480 Smc/anno).
 IVA_AGEVOLATA: Final = 1.10

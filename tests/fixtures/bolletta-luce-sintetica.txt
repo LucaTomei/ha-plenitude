@@ -1,0 +1,51 @@
+Bolletta Numero Cliente
+Luce 500000000002
+Contratto intestato a:
+Mario Rossi
+Periodo di fatturazione: dal 01/08/2026 al 30/09/2026
+Fattura elettronica numero 9100000002 valida ai fini fiscali - Data di emissione 09/10/2026
+Luce
+Totale da pagare entro il 03/11/2026
+328,78 Consumo del periodo
+€ di fatturazione
+708
+kWh
+Principali voci di spesa incluse nel totale da pagare
+In un anno hai consumato 2.622 kWh (dal 01/10/2025
+Luce 310,78 € al 30/09/2026)
+Indirizzo di fornitura POD Potenza Impegnata Potenza Disponibile
+Via Roma 1, 00100 IT001E00000001 3 kW 3,3 kW
+Roma RM
+Scontrino dell'energia Box dell'offerta
+Prezzo medio Importi
+QUOTA PER CONSUMI 708 kWh 0,326864 231,42 € Nome offerta: OFFERTA LUCE DI PROVA
+€/kWh
+di cui spesa per la vendita di energia 0,278983 197,52 €
+QUOTA FISSA 2 mesi 13,010000 26,02 € Oneri di recesso: no
+€/mese Frequenza fatturazione: bimestrale
+QUOTA POTENZA 3 kW x 2 mesi 1,976667 11,86 €
+€/kW/mese
+Totale bolletta 310,78 €
+Totale da pagare 328,78 € Indice di riferimento: PUN Index GME
+Il prezzo medio rappresenta un valore medio di sintesi.
+Totale Imposte 13,23 €
+Letture e Consumi
+Segnanti Segnanti Segnanti Consumo
+Letture precedenti bollette Data
+Fascia F1 Fascia F2 Fascia F3 kWh
+Ultima Lettura Rilevata fatturata 31/07/2026 3222 1978 2926
+Segnanti Segnanti Segnanti Consumo
+Letture presente bolletta Data
+Fascia F1 Fascia F2 Fascia F3 kWh
+Rilevata distributore 31/08/2026 3430 2087 3077 468
+Rilevata distributore 30/09/2026 3526 2150 3158 240
+Consumo fatturato 708 0 0 708
+Elementi di dettaglio Luce
+Corrispettivo Luce Index tipo prezzo prezzo kWh € regime iva
+DAL 01/08/2026 AL 31/08/2026 €/kWh 0,17999900 468 84,24 AGE
+DAL 01/09/2026 AL 30/09/2026 €/kWh 0,20754200 240 49,81 AGE
+Totale netto IVA 282,53 €
+Totale fornitura di luce e imposte 310,78 €
+Totale bolletta salvo ricalcolo 310,78 €
+Totale canone di abbonamento alla televisione per uso privato 18,00 €
+Totale da pagare per questa bolletta 328,78 €

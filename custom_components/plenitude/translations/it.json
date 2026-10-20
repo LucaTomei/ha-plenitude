@@ -132,6 +132,9 @@
           },
           "da_pagare": {
             "name": "Da pagare"
+          },
+          "consumo_kwh": {
+            "name": "Consumo (kWh)"
           }
         }
       },
@@ -242,6 +245,15 @@
         "state_attributes": {
           "data_lettura": {
             "name": "Data lettura"
+          },
+          "fascia_f1": {
+            "name": "Fascia F1"
+          },
+          "fascia_f2": {
+            "name": "Fascia F2"
+          },
+          "fascia_f3": {
+            "name": "Fascia F3"
           }
         }
       },
@@ -261,11 +273,48 @@
         "state_attributes": {
           "periodi_tariffari": {
             "name": "Periodi tariffari"
+          },
+          "periodi": {
+            "name": "Periodi fatturati"
           }
         }
       },
       "ultimo_aggiornamento": {
         "name": "Ultimo aggiornamento"
+      },
+      "consumo_ultima_bolletta": {
+        "name": "Consumo ultima bolletta"
+      },
+      "potenza_impegnata": {
+        "name": "Potenza impegnata",
+        "state_attributes": {
+          "potenza_disponibile": {
+            "name": "Potenza disponibile"
+          },
+          "quota_potenza": {
+            "name": "Quota potenza (€/kW/mese)"
+          }
+        }
+      },
+      "prezzo_energia": {
+        "name": "Prezzo energia",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Periodo dal"
+          },
+          "periodo_al": {
+            "name": "Periodo al"
+          },
+          "prezzo_quota_consumi": {
+            "name": "Prezzo quota consumi senza imposte e IVA (€/kWh)"
+          },
+          "imposte": {
+            "name": "Accise (€)"
+          },
+          "quota_fissa": {
+            "name": "Quota fissa (€/mese)"
+          }
+        }
       }
     }
   },

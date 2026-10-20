@@ -132,6 +132,9 @@
           },
           "da_pagare": {
             "name": "Amount due"
+          },
+          "consumo_kwh": {
+            "name": "Consumption (kWh)"
           }
         }
       },
@@ -242,6 +245,15 @@
         "state_attributes": {
           "data_lettura": {
             "name": "Reading date"
+          },
+          "fascia_f1": {
+            "name": "F1 band"
+          },
+          "fascia_f2": {
+            "name": "F2 band"
+          },
+          "fascia_f3": {
+            "name": "F3 band"
           }
         }
       },
@@ -261,11 +273,48 @@
         "state_attributes": {
           "periodi_tariffari": {
             "name": "Tariff periods"
+          },
+          "periodi": {
+            "name": "Billing periods"
           }
         }
       },
       "ultimo_aggiornamento": {
         "name": "Last update"
+      },
+      "consumo_ultima_bolletta": {
+        "name": "Last bill consumption"
+      },
+      "potenza_impegnata": {
+        "name": "Contracted power",
+        "state_attributes": {
+          "potenza_disponibile": {
+            "name": "Available power"
+          },
+          "quota_potenza": {
+            "name": "Power fee (€/kW/month)"
+          }
+        }
+      },
+      "prezzo_energia": {
+        "name": "Energy price",
+        "state_attributes": {
+          "periodo_dal": {
+            "name": "Period from"
+          },
+          "periodo_al": {
+            "name": "Period to"
+          },
+          "prezzo_quota_consumi": {
+            "name": "Consumption price excl. taxes and VAT (€/kWh)"
+          },
+          "imposte": {
+            "name": "Excise duties (€)"
+          },
+          "quota_fissa": {
+            "name": "Fixed fee (€/month)"
+          }
+        }
       }
     }
   },

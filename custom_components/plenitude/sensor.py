@@ -13,7 +13,13 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import CURRENCY_EURO, EntityCategory, UnitOfEnergy, UnitOfVolume
+from homeassistant.const import (
+    CURRENCY_EURO,
+    EntityCategory,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfVolume,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -142,7 +148,49 @@ def _attributi_ultima(conto: Conto) -> dict[str, Any] | None:
         attributi["periodo_dal"] = pdf.dal.isoformat()
         attributi["periodo_al"] = pdf.al.isoformat()
         attributi["consumo_smc"] = pdf.consumo_smc
+    if (luce := conto.bollette_luce.get(b.numero)) is not None:
+        attributi["periodo_dal"] = luce.dal.isoformat()
+        attributi["periodo_al"] = luce.al.isoformat()
+        attributi["consumo_kwh"] = luce.consumo_kwh
     return attributi
+
+
+def _attributi_lettura(conto: Conto) -> dict[str, Any]:
+    attributi: dict[str, Any] = {"data_lettura": _iso(conto.data_lettura)}
+    attributi.update({f"fascia_{f.lower()}": v for f, v in conto.letture_fasce.items()})
+    return attributi
+
+
+def _attributi_bollette_lette(conto: Conto) -> dict[str, Any]:
+    if conto.commodity == GAS:
+        return {"periodi_tariffari": [p.dal.isoformat() for p in conto.periodi]}
+    return {
+        "periodi": [
+            f"{b.dal.isoformat()}/{b.al.isoformat()}"
+            for b in sorted(conto.bollette_luce.values(), key=lambda b: b.dal)
+        ]
+    }
+
+
+def _attributi_potenza(conto: Conto) -> dict[str, Any] | None:
+    if (luce := conto.ultima_luce) is None:
+        return None
+    return {
+        "potenza_disponibile": luce.potenza_disponibile,
+        "quota_potenza": luce.quota_potenza_kw_mese,
+    }
+
+
+def _attributi_prezzo_energia(conto: Conto) -> dict[str, Any] | None:
+    if (luce := conto.ultima_luce) is None:
+        return None
+    return {
+        "periodo_dal": luce.dal.isoformat(),
+        "periodo_al": luce.al.isoformat(),
+        "prezzo_quota_consumi": luce.prezzo_quota_consumi,
+        "imposte": luce.imposte,
+        "quota_fissa": luce.quota_fissa_mese,
+    }
 
 
 def _attributi_da_pagare(conto: Conto) -> dict[str, Any]:
@@ -277,10 +325,38 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
         device_class=SensorDeviceClass.GAS,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+        unita_luce=UnitOfEnergy.KILO_WATT_HOUR,
         suggested_display_precision=0,
-        forniture=frozenset({GAS}),
         valore=lambda c: c.lettura,
-        attributi=lambda c: {"data_lettura": _iso(c.data_lettura)},
+        attributi=_attributi_lettura,
+    ),
+    ContoSensorDescription(
+        key="consumo_ultima_bolletta",
+        translation_key="consumo_ultima_bolletta",
+        native_unit_of_measurement=UNITA_SMC,
+        unita_luce=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=0,
+        valore=lambda c: c.consumo_ultima_bolletta,
+    ),
+    ContoSensorDescription(
+        key="potenza_impegnata",
+        translation_key="potenza_impegnata",
+        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.KILO_WATT,
+        suggested_display_precision=1,
+        forniture=frozenset({LUCE}),
+        valore=lambda c: c.ultima_luce.potenza_impegnata if c.ultima_luce else None,
+        attributi=_attributi_potenza,
+    ),
+    ContoSensorDescription(
+        key="prezzo_energia",
+        translation_key="prezzo_energia",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
+        suggested_display_precision=3,
+        forniture=frozenset({LUCE}),
+        valore=lambda c: c.ultima_luce.prezzo_energia if c.ultima_luce else None,
+        attributi=_attributi_prezzo_energia,
     ),
     ContoSensorDescription(
         key="prossima_autolettura",
@@ -294,17 +370,16 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
         key="consumo_annuo",
         translation_key="consumo_annuo",
         native_unit_of_measurement=UNITA_SMC,
+        unita_luce=UnitOfEnergy.KILO_WATT_HOUR,
         suggested_display_precision=0,
-        forniture=frozenset({GAS}),
-        valore=lambda c: c.ultima_pdf.consumo_annuo_smc if c.ultima_pdf else None,
+        valore=lambda c: c.consumo_annuo,
     ),
     ContoSensorDescription(
         key="bollette_lette",
         translation_key="bollette_lette",
         entity_category=EntityCategory.DIAGNOSTIC,
-        forniture=frozenset({GAS}),
-        valore=lambda c: len(c.bollette_pdf),
-        attributi=lambda c: {"periodi_tariffari": [p.dal.isoformat() for p in c.periodi]},
+        valore=lambda c: c.bollette_lette,
+        attributi=_attributi_bollette_lette,
     ),
 )
 

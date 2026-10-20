@@ -92,8 +92,10 @@ async def test_sensori_luce(hass: HomeAssistant, finto: FintoPlenitude) -> None:
     assert consumo.attributes["device_class"] == "energy"
     assert consumo.attributes["fascia_f1"] == 96
     registro = er.async_get(hass)
-    for chiave in ("lettura_contatore", "consumo_annuo", "bollette_lette", "prossima_autolettura"):
+    for chiave in ("prossima_autolettura", "prezzo_gas"):
         assert registro.async_get_entity_id("sensor", DOMAIN, f"{CONTO_LUCE}_{chiave}") is None
+    for chiave in ("potenza_impegnata", "prezzo_energia"):
+        assert registro.async_get_entity_id("sensor", DOMAIN, f"{CONTO_GAS}_{chiave}") is None
     # i servizi che non sono luce o gas non creano dispositivi
     dispositivi = dr.async_entries_for_config_entry(
         dr.async_get(hass), hass.config_entries.async_entries(DOMAIN)[0].entry_id
@@ -507,3 +509,35 @@ async def test_prezzo_gas(hass: HomeAssistant, finto: FintoPlenitude) -> None:
     assert (
         er.async_get(hass).async_get_entity_id("sensor", DOMAIN, f"{CONTO_LUCE}_prezzo_gas") is None
     )
+
+
+async def test_dettagli_luce_dalla_bolletta(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Dal PDF della bolletta luce: consumi, potenza, prezzo energia e lettura del contatore."""
+    from homeassistant.components.energy import validate
+
+    await _avvia(hass)
+    importo = _stato(hass, f"{CONTO_LUCE}_ultima_bolletta_importo")
+    assert importo.attributes["periodo_dal"] == "2026-08-01"
+    assert importo.attributes["consumo_kwh"] == 708
+    assert _stato(hass, f"{CONTO_LUCE}_consumo_ultima_bolletta").state == "708.0"
+    annuo = _stato(hass, f"{CONTO_LUCE}_consumo_annuo")
+    assert annuo.state == "2622.0"
+    assert annuo.attributes["unit_of_measurement"] == "kWh"
+    potenza = _stato(hass, f"{CONTO_LUCE}_potenza_impegnata")
+    assert potenza.state == "3.0"
+    assert potenza.attributes["unit_of_measurement"] == "kW"
+    assert potenza.attributes["potenza_disponibile"] == 3.3
+    prezzo = _stato(hass, f"{CONTO_LUCE}_prezzo_energia")
+    assert float(prezzo.state) == pytest.approx((231.42 + 13.23) * 1.10 / 708, abs=1e-4)
+    assert prezzo.attributes["unit_of_measurement"].endswith(validate.ENERGY_PRICE_UNITS)
+    lettura = _stato(hass, f"{CONTO_LUCE}_lettura_contatore")
+    assert lettura.state == str(3526 + 2150 + 3158)
+    assert lettura.attributes["unit_of_measurement"] == "kWh"
+    assert lettura.attributes["device_class"] == "energy"
+    assert lettura.attributes["state_class"] == "total_increasing"
+    assert lettura.attributes["fascia_f1"] == 3526
+    assert lettura.attributes["data_lettura"] == "2026-09-30"
+    lette = _stato(hass, f"{CONTO_LUCE}_bollette_lette")
+    assert lette.state == "1"
+    assert lette.attributes["periodi"] == ["2026-08-01/2026-09-30"]
+    assert _stato(hass, f"{CONTO_GAS}_consumo_ultima_bolletta").state == "20"

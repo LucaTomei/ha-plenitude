@@ -50,6 +50,15 @@
       },
       "ultimo_aggiornamento": {
         "default": "mdi:cloud-sync"
+      },
+      "consumo_ultima_bolletta": {
+        "default": "mdi:file-chart"
+      },
+      "potenza_impegnata": {
+        "default": "mdi:flash-triangle"
+      },
+      "prezzo_energia": {
+        "default": "mdi:currency-eur"
       }
     }
   }
