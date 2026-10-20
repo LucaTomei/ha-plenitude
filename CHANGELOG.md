@@ -2,6 +2,34 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.8.0] - 2026-10-20
+
+### Novità
+
+- **Comunicazioni non lette** dell'area clienti (es. proposte di rinnovo delle condizioni
+  economiche), con l'elenco.
+- **Calendario Scadenze**: scadenze delle bollette con l'importo, finestra
+  dell'autolettura del gas e date delle comunicazioni.
+- Il consumo dell'ultimo mese riporta lo stesso mese dell'anno precedente e la differenza.
+- Più leggera: i PDF si scaricano e si leggono solo in background, uno alla volta e una
+  volta sola; gli aggiornamenti non leggono mai PDF. Dopo un aggiornamento
+  dell'integrazione i dati restano visibili mentre le bollette vengono rilette.
+
+### Correzioni
+
+- Consumi da 1.000 Smc in su (con il punto delle migliaia) letti correttamente.
+- Quota fissa di un mese coperto solo in parte, o divisa su più righe, calcolata per i
+  giorni effettivi.
+- Prezzo medio della luce calcolato dalle voci di costo: non risente dei conguagli.
+- Lette anche le bollette luce con il riepilogo ridotto e quelle fino all'inizio del 2025.
+- Statistiche: un mese arrivato in ritardo entra nella somma, e la somma non scende mai.
+- Un elenco dei conti vuoto o anomalo non cancella sensori e bollette: si riprova.
+- Un PDF non disponibile si riprova dopo un giorno; un errore di scrittura su disco non
+  ferma gli altri download; il pulsante attende davvero la fine dei download.
+- Dati inattesi dall'area clienti (voci non valide, date impossibili, importi negativi)
+  non bloccano più l'aggiornamento.
+- Le opzioni non perdono il conto gas scelto se salvate a integrazione non caricata.
+
 ## [0.7.0] - 2026-10-20
 
 ### Novità
@@ -53,7 +81,7 @@ Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
 - **Prezzo medio** per luce e gas: importo dell'ultima bolletta diviso per il consumo del
   periodo fatturato, tutto compreso. Per la luce è il prezzo da usare nel pannello Energia.
-- **Prezzo gas**: prezzo per Smc nello scaglione raggiunto nell'anno, IVA inclusa, da usare
+- **Prezzo gas**: prezzo del gas (in €/m³, Smc trattati come m³) nello scaglione raggiunto nell'anno, IVA inclusa, da usare
   nel pannello Energia per il gas.
 - Pulsante **Scarica le bollette**: rilegge subito l'account e scarica le bollette mancanti,
   riprovando anche quelle che prima non erano disponibili.

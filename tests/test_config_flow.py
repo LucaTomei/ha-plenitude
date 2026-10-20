@@ -320,3 +320,30 @@ async def test_opzioni_account(hass: HomeAssistant, finto: FintoPlenitude) -> No
     )
     await hass.async_block_till_done(wait_background_tasks=True)
     assert entry.options[CONF_CONTO_GAS] == "500000000008"
+
+
+async def test_invio_codice_account_bloccato(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Se l'account si blocca all'invio del codice, lo si dice chiaramente."""
+    from custom_components.plenitude.api import AccountBloccato
+
+    risultato = await _menu(hass, "account")
+    with patch(
+        "custom_components.plenitude.config_flow.ClientPlenitude.invia_codice",
+        side_effect=AccountBloccato("bloccato"),
+    ):
+        risultato = await hass.config_entries.flow.async_configure(
+            risultato["flow_id"], {CONF_EMAIL: EMAIL, CONF_PASSWORD: PASSWORD}
+        )
+    assert risultato["errors"] == {"base": "account_bloccato"}
+
+
+async def test_opzioni_mantengono_conto_gas_se_non_caricata(
+    hass: HomeAssistant, finto: FintoPlenitude
+) -> None:
+    """Salvando le opzioni a integrazione non caricata, il conto gas scelto resta."""
+    entry = crea_entry_account(hass, **{CONF_CONTO_GAS: "500000000008"})
+    risultato = await hass.config_entries.options.async_init(entry.entry_id)
+    risultato = await hass.config_entries.options.async_configure(
+        risultato["flow_id"], {CONF_INTERVALLO_ORE: 6}
+    )
+    assert entry.options[CONF_CONTO_GAS] == "500000000008"

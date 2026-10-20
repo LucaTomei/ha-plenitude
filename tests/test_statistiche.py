@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+import itertools
 
 import pytest
 from pytest_homeassistant_custom_component.components.recorder.common import (
@@ -179,3 +180,25 @@ async def test_spese_mensili(recorder_mock: Recorder, hass: HomeAssistant) -> No
         lambda: get_metadata(hass, statistic_ids={statistiche.id_statistica_spesa(gas)})
     )
     assert metadati[statistiche.id_statistica_spesa(gas)][1]["unit_of_measurement"] == "EUR"
+
+
+async def test_mese_arrivato_in_ritardo(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """Un mese mancante che arriva dopo (es. bolletta scaricata in ritardo) entra nella somma."""
+    await statistiche.importa_consumi(
+        hass, {"g": _conto({(2026, 1): 10, (2026, 2): 10, (2026, 5): 10, (2026, 6): 10})}
+    )
+    await statistiche.importa_consumi(hass, {"g": _conto({(2026, m): 10 for m in range(1, 7)})})
+    somme = await _somme(hass)
+    assert somme[-1] == ("2026-06", 60)
+    assert ("2026-03", 30) in somme
+
+
+async def test_mese_tolto_non_fa_scendere(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """Un mese registrato che sparisce dalla fonte vale zero: la somma non scende mai."""
+    await statistiche.importa_consumi(hass, {"g": _conto({(2026, m): 10 for m in range(1, 7)})})
+    valori = {(2026, m): 10 for m in range(1, 7)}
+    del valori[(2026, 4)]
+    valori[(2026, 5)] = 1
+    await statistiche.importa_consumi(hass, {"g": _conto(valori)})
+    somme = [s for _, s in await _somme(hass)]
+    assert all(b >= a for a, b in itertools.pairwise(somme))

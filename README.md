@@ -146,7 +146,7 @@ scegli **Account Plenitude**:
 | 3️⃣ | Scegli **ogni quante ore** aggiornare e, se vuoi, la **fornitura MyItalgas** da aggiornare con i prezzi. |
 
 Fatto: dopo pochi secondi compaiono i dispositivi **Plenitude Luce** e **Plenitude Gas**;
-i PDF delle bollette gas si scaricano in background nei minuti successivi.
+i PDF delle bollette di luce e gas si scaricano in background nei minuti successivi.
 
 > [!NOTE]
 > Puoi aggiungere più account Plenitude. La password serve solo per l'accesso e non viene
@@ -174,9 +174,9 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Da pagare | ✅ | ✅ | Totale ancora da pagare; negli attributi le bollette e la prossima scadenza |
 | Bollette da pagare | ✅ | ✅ | Quante bollette hanno un importo da pagare |
 | Spesa ultimo mese | ✅ | ✅ | € dell'ultimo mese fatturato; negli attributi la spesa di ogni mese degli ultimi 12 |
-| Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
+| Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; negli attributi lo stesso mese dell'anno prima e la differenza in %, per la luce anche le fasce |
 | Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
-| Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo |
+| Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo (luce: senza canone RAI) |
 | Prezzo energia | ✅ | | €/kWh dei consumi con accise e IVA, senza quota fissa, quota potenza e canone |
 | PUN | ✅ | | PUN applicato in bolletta nell'ultimo mese fatturato (€/kWh), con lo storico dei mesi, lo spread e il dispacciamento |
 | Indice gas (PSV) | | ✅ | Indice del gas applicato in bolletta nell'ultimo mese fatturato (€/Smc), con lo storico dei mesi e lo spread |
@@ -189,6 +189,8 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Prossima autolettura | | ✅ | Inizio della prossima finestra per l'autolettura |
 | Bollette lette | ✅ | ✅ | Diagnostica: bollette PDF lette (per il gas anche i periodi tariffari ricavati) |
 | Spesa totale ultimo mese | | | Sul dispositivo dell'account: luce + gas dell'ultimo mese fatturato per entrambi, con i 12 mesi precedenti |
+| Comunicazioni non lette | | | Sul dispositivo dell'account: comunicazioni dell'area clienti non lette (es. proposte di rinnovo delle condizioni), con l'elenco |
+| Scadenze (calendario) | | | Sul dispositivo dell'account: scadenze delle bollette con l'importo, finestra dell'autolettura del gas e date delle comunicazioni |
 | Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
 | Scarica le bollette | | | Pulsante, sul dispositivo dell'account: rilegge subito l'account e scarica le bollette mancanti |
 
@@ -286,6 +288,10 @@ Nella configurazione di ogni sorgente scegli **"Utilizza un'entità con il prezz
 | 🔥 Gas | **Plenitude Gas · Prezzo gas** (€/m³) | Prezzo reale del gas per lo scaglione raggiunto quest'anno. Il *prezzo medio* del gas non è adatto: d'estate le quote fisse lo gonfiano. |
 
 > [!NOTE]
+> Gli Smc (metri cubi standard) delle bollette sono trattati come m³ (differiscono per il
+> coefficiente C, circa l'1%), perché il pannello Energia accetta i prezzi del gas in €/m³.
+
+> [!NOTE]
 > Il solo PUN (prezzo all'ingrosso) copre circa metà del costo reale della luce: per
 > avere nel pannello la spesa vera usa il *Prezzo medio* di Plenitude. Per il gas il
 > pannello non può aggiungere le quote fisse mensili (circa 17 € al mese, IVA inclusa):
@@ -322,8 +328,7 @@ Con l'account, i PDF delle ultime 24 bollette gas vengono scaricati una sola vol
 
 ## 📁 Bollette da cartella
 
-Senza account, le bollette gas in PDF vengono lette da una cartella: scegli **Cartella di
-PDF** quando aggiungi l'integrazione. La cartella predefinita è `config/plenitude/bollette`
+Senza account, le bollette gas in PDF vengono lette da una cartella: scegli **Cartella di bollette PDF** quando aggiungi l'integrazione. La cartella predefinita è `config/plenitude/bollette`
 e viene creata da sola al primo avvio.
 
 - **A mano:** copia nella cartella i PDF delle bollette gas scaricati dall'area clienti
@@ -332,6 +337,14 @@ e viene creata da sola al primo avvio.
 - **In automatico dalle email:** se ricevi le bollette via email con il PDF allegato, usa
   l'integrazione ufficiale **IMAP** di Home Assistant per salvare l'allegato nella cartella
   appena arriva (azione *Imap: scarica allegato* / `imap.download`).
+
+## 🪶 Leggera per Home Assistant
+
+- Un aggiornamento ogni 12 ore (modificabile), con poche chiamate all'area clienti.
+- I PDF delle bollette si scaricano e si leggono **una volta sola**, in background, uno
+  alla volta: il risultato resta in una cache su disco e dopo un riavvio non si rileggono.
+- Gli aggiornamenti non leggono mai PDF: avvio e aggiornamenti richiedono pochi secondi.
+- Un PDF non ancora disponibile si riprova dopo un giorno, non a ogni aggiornamento.
 
 ## 🔐 Come funziona l'accesso
 
@@ -364,7 +377,7 @@ l'integrazione riprova da sola senza chiederti nulla.
 | *Account bloccato temporaneamente* | Troppi tentativi: riprova dopo qualche minuto. |
 | Richiesta di riautenticazione | La sessione è scaduta o revocata: inserisci di nuovo password e codice. |
 | L'integrazione va in *riprova* | Plenitude non raggiungibile: riprova da sola più tardi. |
-| *Bollette lette* resta a 0 | I PDF sono ancora in download (pochi minuti) o non sono bollette gas leggibili. |
+| *Bollette lette* resta a 0 | I PDF sono ancora in download (pochi minuti) o non sono bollette leggibili. |
 | Manca una bolletta o un prezzo | Premi **Scarica le bollette** sul dispositivo *Plenitude*: rilegge l'account e riprova i download. |
 | Una fornitura non c'è più | Il suo dispositivo diventa non disponibile: puoi eliminarlo dalla pagina del dispositivo. |
 | I prezzi non arrivano in MyItalgas | Verifica la fornitura MyItalgas nelle opzioni e che MyItalgas sia installato. |

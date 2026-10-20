@@ -74,7 +74,8 @@
     "abort": {
       "already_configured": "Plenitude is already configured.",
       "reauth_successful": "Signed in again successfully.",
-      "account_diverso": "This is a different Plenitude account from the configured one."
+      "account_diverso": "This is a different Plenitude account from the configured one.",
+      "already_in_progress": "A configuration for this Plenitude account is already in progress."
     }
   },
   "options": {
@@ -100,6 +101,11 @@
     "button": {
       "scarica_bollette": {
         "name": "Download bills"
+      }
+    },
+    "calendar": {
+      "scadenze": {
+        "name": "Due dates"
       }
     },
     "sensor": {
@@ -192,6 +198,12 @@
           },
           "fascia_f3": {
             "name": "F3 band"
+          },
+          "anno_precedente": {
+            "name": "Same month last year"
+          },
+          "differenza_percentuale": {
+            "name": "Difference from last year (%)"
           }
         }
       },
@@ -392,6 +404,14 @@
           },
           "condizioni_scadute": {
             "name": "Economic conditions expired"
+          }
+        }
+      },
+      "comunicazioni": {
+        "name": "Unread messages",
+        "state_attributes": {
+          "comunicazioni": {
+            "name": "Messages"
           }
         }
       }

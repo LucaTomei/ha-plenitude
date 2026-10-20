@@ -144,26 +144,28 @@ async def _importa_serie(
     mesi = [(_inizio_mese(mese), valore) for mese, valore in valori]
     registrate = await _registrate(hass, statistic_id)
 
+    # si reimportano gli ultimi mesi già registrati e, se manca, ogni mese arrivato in
+    # ritardo (es. una bolletta scaricata dopo): da lì in avanti le somme si ricalcolano
     primo = 0
     if registrate:
         ultimo_inizio = max(registrate)
         nuovi = next((i for i, (inizio, _) in enumerate(mesi) if inizio > ultimo_inizio), len(mesi))
-        primo = max(0, nuovi - MESI_DA_AGGIORNARE)
+        mancante = next(
+            (i for i, (inizio, _) in enumerate(mesi) if inizio not in registrate), len(mesi)
+        )
+        primo = max(0, min(nuovi - MESI_DA_AGGIORNARE, mancante))
+    inizio_ricalcolo = mesi[primo][0]
     # somma progressiva registrata fino al mese precedente il primo da (re)importare
-    precedenti = [inizio for inizio in registrate if inizio < mesi[primo][0]]
+    precedenti = [inizio for inizio in registrate if inizio < inizio_ricalcolo]
     somma = registrate[max(precedenti)] if precedenti else 0.0
 
+    # dal primo mese in poi: i mesi della fonte e quelli già registrati che la fonte non
+    # riporta più (valgono zero, così la somma non torna mai indietro)
+    valori_mese = dict(mesi[primo:])
     dati: list[StatisticData] = []
-    for inizio, valore in mesi[primo:]:
-        somma = round(somma + valore, 3)
+    for inizio in sorted(set(valori_mese) | {m for m in registrate if m >= inizio_ricalcolo}):
+        somma = round(somma + valori_mese.get(inizio, 0.0), 3)
         dati.append(StatisticData(start=inizio, sum=somma))
-    # mesi già registrati che l'area clienti non riporta più (es. un mese parziale tolto):
-    # restano a zero, così la somma non torna mai indietro
-    dati.extend(
-        StatisticData(start=inizio, sum=somma)
-        for inizio in sorted(registrate)
-        if inizio > mesi[-1][0]
-    )
     registrate.update({d["start"]: d["sum"] for d in dati})
 
     metadati = StatisticMetaData(

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 import logging
 from pathlib import Path
+import re
+import time
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -68,6 +70,7 @@ class DatiAccount:
     """Dati dell'account Plenitude esposti alle entità."""
 
     conti: dict[str, Conto] = field(default_factory=dict)
+    avvisi: list[account.Avviso] = field(default_factory=list)
     ultimo_aggiornamento: datetime | None = None
 
 
@@ -188,14 +191,17 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
             hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}.bollette"
         )
         self._lette: dict[str, _Letta] | None = None
-        self._pdf_non_disponibili: set[tuple[str, str]] = set()
-        self._download: asyncio.Task | None = None
+        # bollette il cui PDF non è disponibile: si riprovano dopo RIPROVA_PDF secondi
+        self._pdf_non_disponibili: dict[tuple[str, str], float] = {}
+        # unica attività in background: download dei PDF mancanti e lettura di quelli nuovi
+        self._lavoro: asyncio.Task | None = None
 
     async def _async_update_data(self) -> DatiAccount:
         """Legge i dati dell'account."""
         try:
             utente = await self.client.utente()
-            predefinito = str((utente or {}).get("codiceContoDefault") or "").strip()
+            dati_utente = utente if isinstance(utente, dict) else {}
+            predefinito = str(dati_utente.get("codiceContoDefault") or "").strip()
             if not predefinito:
                 raise UpdateFailed("nessun conto associato all'account Plenitude")
             elenco = await self.client.conti(predefinito)
@@ -207,6 +213,9 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         except PlenitudeError as err:
             raise UpdateFailed(str(err)) from err
 
+        if not elenco:
+            # un account con un conto predefinito ha almeno un conto: risposta anomala
+            raise UpdateFailed("elenco dei conti vuoto")
         precedenti = self.data.conti if self.data else {}
         conti: dict[str, Conto] = {}
         for voce in elenco:
@@ -217,14 +226,32 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         # i conti si leggono in parallelo, come fa l'app
         await asyncio.gather(*(self._completa(c, precedenti.get(c.codice)) for c in conti.values()))
 
-        await self._leggi_pdf(conti)
-        await self._myitalgas.invia(
-            self.config_entry.options.get(CONF_PDR_MYITALGAS), self._periodi_collegati(conti)
+        if self._lette is None:
+            self._lette = await self._carica_memoria()
+        self._applica_pdf(conti)
+        await self._pianifica_lavoro(conti)
+        await self._aggiorna_derivati(conti, consumi=True)
+        avvisi = await self._avvisi(
+            dati_utente, precedenti_avvisi=self.data.avvisi if self.data else []
         )
-        await statistiche.importa_consumi(self.hass, conti)
-        if self.client.sessione is not None:
-            await statistiche.importa_spese(self.hass, conti, self.client.sessione.uid)
-        return DatiAccount(conti=conti, ultimo_aggiornamento=dt_util.utcnow())
+        return DatiAccount(conti=conti, avvisi=avvisi, ultimo_aggiornamento=dt_util.utcnow())
+
+    async def _avvisi(
+        self, dati_utente: dict[str, Any], precedenti_avvisi: list[account.Avviso]
+    ) -> list[account.Avviso]:
+        """Comunicazioni dell'area clienti; se non si riescono a leggere restano le precedenti."""
+        codice_cliente = str(dati_utente.get("codiceCliente") or "").strip()
+        if not codice_cliente:
+            return precedenti_avvisi
+        try:
+            return account.avvisi_da(await self.client.avvisi(codice_cliente))
+        except AccountBloccato as err:
+            raise UpdateFailed(str(err)) from err
+        except PlenitudeAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
+        except PlenitudeError as err:
+            _LOGGER.debug("Comunicazioni non lette: %s", err)
+            return precedenti_avvisi
 
     async def _completa(self, conto: Conto, precedente: Conto | None) -> None:
         """Forniture, bollette, consumi e letture di un conto, richiesti in parallelo.
@@ -279,6 +306,16 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         else:
             account.aggiungi_autolettura(conto, autolettura)
 
+    async def _aggiorna_derivati(self, conti: dict[str, Conto], *, consumi: bool) -> None:
+        """Prezzi a MyItalgas e statistiche, a partire dai dati dei conti."""
+        await self._myitalgas.invia(
+            self.config_entry.options.get(CONF_PDR_MYITALGAS), self._periodi_collegati(conti)
+        )
+        if consumi:
+            await statistiche.importa_consumi(self.hass, conti)
+        if self.client.sessione is not None:
+            await statistiche.importa_spese(self.hass, conti, self.client.sessione.uid)
+
     async def async_scarica_bollette(self) -> bool:
         """Rilegge l'account e scarica subito le bollette mancanti, attendendo la fine.
 
@@ -287,8 +324,16 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         """
         self._pdf_non_disponibili.clear()
         await self.async_refresh()
-        if self._download is not None and not self._download.done():
-            await asyncio.shield(self._download)
+        # un'attività già in corso può non comprendere le bollette appena ammesse: finita
+        # quella, se c'è ancora qualcosa da fare se ne avvia un'altra
+        for _ in range(3):
+            in_corso = self._lavoro is not None and not self._lavoro.done()
+            if not in_corso and (
+                not self.data or not await self._pianifica_lavoro(self.data.conti)
+            ):
+                break
+            assert self._lavoro is not None
+            await asyncio.wait({self._lavoro})
         return self.last_update_success
 
     def cartella_conto(self, codice: str) -> Path:
@@ -296,10 +341,14 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         return self._archivio / codice
 
     async def _carica_memoria(self) -> dict[str, _Letta]:
+        """Bollette già lette, salvate su disco.
+
+        Quelle lette da una versione precedente del lettore restano valide finché non
+        vengono rilette in background (vedi `_esamina_archivio`).
+        """
         lette: dict[str, _Letta] = {}
         dati = (await self._memoria.async_load()) or {}
-        if dati.get("versione") != bollette.VERSIONE_LETTURA:
-            return lette  # letta con un'altra versione del parser: si rileggono i PDF
+        versione = dati.get("versione")
         for nome, voce in (dati.get("bollette") or {}).items():
             try:
                 bolletta = bollette.bolletta_da_dict(voce["b"]) if voce["b"] else None
@@ -308,9 +357,10 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
                     if voce["p"]
                     else None
                 )
-                luce = bollette.bolletta_luce_da_dict(voce["l"]) if voce["l"] else None
-                lette[nome] = (int(voce["t"]), int(voce["s"]), bolletta, periodo, luce)
-            except (KeyError, TypeError, ValueError) as err:
+                luce = bollette.bolletta_luce_da_dict(voce["l"]) if voce.get("l") else None
+                letta_con = int(voce.get("v", versione) or 0)
+                lette[nome] = (int(voce["t"]), int(voce["s"]), bolletta, periodo, luce, letta_con)
+            except (KeyError, TypeError, ValueError, AttributeError) as err:
                 _LOGGER.debug("Voce %s della cache delle bollette ignorata: %s", nome, err)
         return lette
 
@@ -324,118 +374,146 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
                     "b": bollette.bolletta_a_dict(b) if b else None,
                     "p": [p[0].isoformat(), p[1].isoformat()] if p else None,
                     "l": bollette.bolletta_luce_a_dict(luce) if luce else None,
+                    "v": versione,
                 }
-                for nome, (t, s, b, p, luce) in (self._lette or {}).items()
+                for nome, (t, s, b, p, luce, versione) in (self._lette or {}).items()
             },
         }
 
-    async def _leggi_pdf(self, conti: dict[str, Conto]) -> None:
-        """Legge le bollette archiviate e avvia il download di quelle mancanti.
-
-        Del gas si scaricano le ultime 24 bollette (prezzi per MyItalgas), della luce le
-        ultime 3 (periodo fatturato, per il prezzo medio).
-        """
-        if self._lette is None:
-            self._lette = await self._carica_memoria()
-        # conti non più nell'account: le loro bollette escono dalla cache
-        orfane = [n for n in self._lette if n.split("/", 1)[0] not in conti]
-        for nome in orfane:
-            del self._lette[nome]
-        cambiate = bool(orfane)
-        mancanti: list[tuple[str, str, Path]] = []
+    def _applica_pdf(self, conti: dict[str, Conto]) -> None:
+        """Dati delle bollette PDF (dalla cache, senza leggere file) nei conti."""
+        assert self._lette is not None
         for conto in conti.values():
-            cartella = self.cartella_conto(conto.codice)
-            quante = MAX_BOLLETTE_PDF if conto.commodity == GAS else MAX_BOLLETTE_PDF_LUCE
-            for b in conto.bollette[:quante]:
-                percorso = cartella / f"{b.numero}.pdf"
-                if (conto.codice, b.numero) in self._pdf_non_disponibili:
+            gas: list[Bolletta] = []
+            periodi: dict[str, tuple[date, date]] = {}
+            luce: dict[str, BollettaLuce] = {}
+            prefisso = f"{conto.codice}/"
+            for nome, (_t, _s, bolletta, periodo, letta_luce, _v) in self._lette.items():
+                if not nome.startswith(prefisso):
                     continue
-                if not await self.hass.async_add_executor_job(percorso.is_file):
-                    mancanti.append((conto.codice, b.numero, percorso))
-            lette, periodi, luce, cambiate_conto = await self.hass.async_add_executor_job(
-                self._analizza_cartella, conto.codice, cartella
-            )
-            cambiate |= cambiate_conto
+                numero = nome[len(prefisso) :].removesuffix(".pdf")
+                if bolletta is not None:
+                    gas.append(bolletta)
+                if periodo is not None:
+                    periodi[numero] = periodo
+                if letta_luce is not None:
+                    luce[numero] = letta_luce
             conto.periodi_bollette = periodi
             if conto.commodity == GAS:
-                conto.bollette_pdf = unisci_bollette(lette)
+                conto.bollette_pdf = unisci_bollette(gas)
                 conto.periodi = bollette.periodi_tariffari(conto.bollette_pdf)
             else:
                 conto.bollette_luce = luce
                 account.aggiungi_lettura_luce(conto)
-        if cambiate:
-            await self._memoria.async_save(self._dati_memoria())
-        if mancanti and (self._download is None or self._download.done()):
-            self._download = self.config_entry.async_create_background_task(
-                self.hass, self._scarica(mancanti), f"{DOMAIN} download bollette"
-            )
 
-    def _analizza_cartella(
-        self, codice: str, cartella: Path
-    ) -> tuple[list[Bolletta], dict[str, tuple[date, date]], dict[str, BollettaLuce], bool]:
-        """Legge i PDF di un conto; quelli già letti e non modificati non si rileggono.
-
-        Ritorna le bollette gas, il periodo fatturato di ogni bolletta, le bollette luce
-        (per numero) e se la cache è cambiata.
-        """
+    async def _pianifica_lavoro(self, conti: dict[str, Conto]) -> bool:
+        """Avvia in background download e letture dei PDF, se servono. Ritorna se è partito."""
+        if self._lavoro is not None and not self._lavoro.done():
+            return False
+        adesso = time.monotonic()
+        attese: dict[str, list[tuple[str, str, Path]]] = {}
+        for conto in conti.values():
+            quante = MAX_BOLLETTE_PDF if conto.commodity == GAS else MAX_BOLLETTE_PDF_LUCE
+            attese[conto.codice] = [
+                (conto.codice, b.numero, self.cartella_conto(conto.codice) / f"{b.numero}.pdf")
+                for b in conto.bollette[:quante]
+                if _RE_NUMERO_SICURO.fullmatch(b.numero)
+                and adesso - self._pdf_non_disponibili.get((conto.codice, b.numero), -RIPROVA_PDF)
+                >= RIPROVA_PDF
+            ]
+        mancanti, da_leggere, presenti = await self.hass.async_add_executor_job(
+            self._esamina_archivio, attese
+        )
+        # nella cache restano solo i PDF presenti nell'archivio dei conti attuali
         assert self._lette is not None
-        cambiate = False
+        orfane = [n for n in self._lette if n not in presenti]
+        for nome in orfane:
+            del self._lette[nome]
+        if orfane:
+            self._applica_pdf(conti)
+            await self._memoria.async_save(self._dati_memoria())
+        if not mancanti and not da_leggere:
+            return False
+        self._lavoro = self.config_entry.async_create_background_task(
+            self.hass, self._lavora(mancanti, da_leggere), f"{DOMAIN} bollette PDF"
+        )
+        return True
+
+    def _esamina_archivio(
+        self, attese: dict[str, list[tuple[str, str, Path]]]
+    ) -> tuple[list[tuple[str, str, Path]], list[tuple[str, Path]], set[str]]:
+        """PDF da scaricare, PDF da leggere (nuovi, modificati o letti da un lettore più
+        vecchio) e PDF presenti, guardando solo data e dimensione dei file."""
+        assert self._lette is not None
+        mancanti: list[tuple[str, str, Path]] = []
+        da_leggere: list[tuple[str, Path]] = []
         presenti: set[str] = set()
-        lette: list[Bolletta] = []
-        periodi: dict[str, tuple[date, date]] = {}
-        luce: dict[str, BollettaLuce] = {}
-        if cartella.is_dir():
+        for codice, voci in attese.items():
+            for _codice, _numero, percorso in voci:
+                if not percorso.is_file():
+                    mancanti.append((_codice, _numero, percorso))
+            cartella = self.cartella_conto(codice)
+            if not cartella.is_dir():
+                continue
             for percorso in sorted(cartella.glob("*.pdf")):
                 nome = f"{codice}/{percorso.name}"
                 try:
                     info = percorso.stat()
-                    memorizzata = self._lette.get(nome)
-                    if memorizzata is None or memorizzata[:2] != (info.st_mtime_ns, info.st_size):
-                        memorizzata = (
-                            info.st_mtime_ns,
-                            info.st_size,
-                            *_analizza_pdf(percorso.read_bytes()),
-                        )
-                        self._lette[nome] = memorizzata
-                        cambiate = True
-                except OSError as err:
-                    _LOGGER.debug("Bolletta %s non leggibile: %s", percorso, err)
+                except OSError:
                     continue
                 presenti.add(nome)
-                if memorizzata[2] is not None:
-                    lette.append(memorizzata[2])
-                if memorizzata[3] is not None:
-                    periodi[percorso.stem] = memorizzata[3]
-                if memorizzata[4] is not None:
-                    luce[percorso.stem] = memorizzata[4]
-        # i PDF cancellati dall'archivio escono dalla cache
-        for nome in [n for n in self._lette if n.startswith(f"{codice}/") and n not in presenti]:
-            del self._lette[nome]
-            cambiate = True
-        return lette, periodi, luce, cambiate
+                letta = self._lette.get(nome)
+                if (
+                    letta is None
+                    or letta[:2] != (info.st_mtime_ns, info.st_size)
+                    or letta[5] != bollette.VERSIONE_LETTURA
+                ):
+                    da_leggere.append((nome, percorso))
+        return mancanti, da_leggere, presenti
 
-    async def _scarica(self, mancanti: list[tuple[str, str, Path]]) -> None:
-        """Scarica i PDF mancanti, poi aggiorna i dati."""
-        scaricati = 0
+    async def _lavora(
+        self, mancanti: list[tuple[str, str, Path]], da_leggere: list[tuple[str, Path]]
+    ) -> None:
+        """Scarica i PDF mancanti e legge quelli nuovi, uno alla volta, poi ricalcola i dati.
+
+        Ogni PDF viene letto una volta sola: il risultato resta nella cache su disco.
+        """
+        da_leggere = list(da_leggere)
         for codice, numero, percorso in mancanti:
             try:
                 dati = await self.client.pdf_bolletta(codice, numero)
             except PlenitudeAuthError:
-                return  # se ne occupa il prossimo aggiornamento, che chiede un nuovo accesso
+                break  # se ne occupa il prossimo aggiornamento, che chiede un nuovo accesso
             except RisorsaNonDisponibile as err:
-                # documento assente: non si richiede più fino al prossimo riavvio
+                # documento non (ancora) disponibile: si riprova fra un giorno
                 _LOGGER.debug("PDF della bolletta %s non disponibile: %s", oscura(numero), err)
-                self._pdf_non_disponibili.add((codice, numero))
+                self._pdf_non_disponibili[(codice, numero)] = time.monotonic()
                 continue
             except PlenitudeError as err:
                 # errore temporaneo: si riprova al prossimo aggiornamento
                 _LOGGER.debug("PDF della bolletta %s non scaricato: %s", oscura(numero), err)
                 continue
-            await self.hass.async_add_executor_job(_salva, percorso, dati)
-            scaricati += 1
-        _LOGGER.debug("Scaricate %d bollette PDF", scaricati)
-        if scaricati:
-            await self.async_request_refresh()
+            try:
+                await self.hass.async_add_executor_job(_salva, percorso, dati)
+            except OSError as err:
+                _LOGGER.warning("Impossibile salvare la bolletta %s: %s", oscura(numero), err)
+                continue
+            da_leggere.append((f"{codice}/{percorso.name}", percorso))
+        assert self._lette is not None
+        lette = 0
+        for nome, percorso in da_leggere:
+            letta = await self.hass.async_add_executor_job(_leggi_file, percorso)
+            if letta is not None:
+                self._lette[nome] = letta
+                lette += 1
+        _LOGGER.debug("Scaricate %d bollette PDF, lette %d", len(da_leggere) - lette, lette)
+        if not lette:
+            return
+        await self._memoria.async_save(self._dati_memoria())
+        if self.data is not None:
+            self._applica_pdf(self.data.conti)
+            await self._aggiorna_derivati(self.data.conti, consumi=False)
+            self.async_set_updated_data(replace(self.data))
 
     def _periodi_collegati(self, conti: dict[str, Conto]) -> list[PeriodoTariffario]:
         """Periodi tariffari del conto gas collegato a MyItalgas."""
@@ -446,6 +524,17 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         return gas[0].periodi if gas else []
 
 
+def _leggi_file(percorso: Path) -> _Letta | None:
+    """Legge un PDF dell'archivio (nel thread di lavoro)."""
+    try:
+        info = percorso.stat()
+        dati = percorso.read_bytes()
+    except OSError as err:
+        _LOGGER.debug("Bolletta %s non leggibile: %s", percorso.name, err)
+        return None
+    return (info.st_mtime_ns, info.st_size, *_analizza_pdf(dati), bollette.VERSIONE_LETTURA)
+
+
 def _salva(percorso: Path, dati: bytes) -> None:
     percorso.parent.mkdir(parents=True, exist_ok=True)
     temporaneo = percorso.with_suffix(".tmp")
@@ -453,8 +542,15 @@ def _salva(percorso: Path, dati: bytes) -> None:
     temporaneo.replace(percorso)
 
 
-# (data di modifica in ns, dimensione, bolletta gas, periodo fatturato, bolletta luce)
-type _Letta = tuple[int, int, Bolletta | None, tuple[date, date] | None, BollettaLuce | None]
+# (data di modifica in ns, dimensione, bolletta gas, periodo fatturato, bolletta luce,
+#  versione del lettore)
+type _Letta = tuple[int, int, Bolletta | None, tuple[date, date] | None, BollettaLuce | None, int]
+
+# numero di bolletta usabile come nome di file
+_RE_NUMERO_SICURO = re.compile(r"[A-Za-z0-9][\w-]*")
+
+# dopo quanto si riprova a scaricare un PDF non disponibile (secondi)
+RIPROVA_PDF = 24 * 3600
 
 
 def _analizza_pdf(

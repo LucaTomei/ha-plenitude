@@ -5,6 +5,11 @@
         "default": "mdi:file-download"
       }
     },
+    "calendar": {
+      "scadenze": {
+        "default": "mdi:calendar-alert"
+      }
+    },
     "sensor": {
       "ultima_bolletta_importo": {
         "default": "mdi:cash"
@@ -37,13 +42,13 @@
         "default": "mdi:gas-burner"
       },
       "lettura_contatore": {
-        "default": "mdi:meter-gas"
+        "default": "mdi:counter"
       },
       "prossima_autolettura": {
         "default": "mdi:counter"
       },
       "consumo_annuo": {
-        "default": "mdi:fire-circle"
+        "default": "mdi:chart-box"
       },
       "bollette_lette": {
         "default": "mdi:file-document-multiple"
@@ -74,6 +79,9 @@
       },
       "offerta": {
         "default": "mdi:file-sign"
+      },
+      "comunicazioni": {
+        "default": "mdi:email-alert"
       }
     }
   }

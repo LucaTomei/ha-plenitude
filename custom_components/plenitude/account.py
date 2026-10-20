@@ -38,6 +38,20 @@ class ConsumoMese:
     valore: float
     fasce: dict[str, float]
     parziale: bool
+    anno_precedente: float | None = None
+    differenza_percentuale: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Avviso:
+    """Comunicazione dell'area clienti."""
+
+    identificativo: str
+    data: date | None
+    descrizione: str
+    fornitura: str | None
+    sezione: str | None
+    letta: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,8 +254,21 @@ class Conto:
         consumi = {c.mese: c.valore for c in self.consumi}
         for b in self.bollette:
             periodo = self.periodi_bollette.get(b.numero)
+            luce = self.bollette_luce.get(b.numero)
+            if luce is not None and luce.prezzo_medio is not None and periodo is not None:
+                # luce: dalle voci di costo, che non risentono dei conguagli
+                return PrezzoMedio(
+                    valore=luce.prezzo_medio,
+                    numero=b.numero,
+                    dal=periodo[0],
+                    al=periodo[1],
+                    consumo=round(luce.consumo_quota_kwh or luce.consumo_kwh or 0.0, 3),
+                    importo=round(
+                        luce.prezzo_medio * (luce.consumo_quota_kwh or luce.consumo_kwh or 0.0), 2
+                    ),
+                )
             importo = b.importo
-            if (luce := self.bollette_luce.get(b.numero)) and luce.totale_fornitura:
+            if luce is not None and luce.totale_fornitura:
                 importo = luce.totale_fornitura
             if periodo is None or importo is None or importo <= 0:
                 continue
@@ -342,6 +369,8 @@ def commodity(valore: Any) -> str | None:
 
 def conto_da(dati: dict[str, Any]) -> Conto | None:
     """Conto dall'elenco dei conti; None per voci senza codice."""
+    if not isinstance(dati, dict):
+        return None
     codice = str(dati.get("codice") or "").strip()
     if not codice:
         return None
@@ -356,6 +385,7 @@ def conto_da(dati: dict[str, Any]) -> Conto | None:
 
 def aggiungi_fornitura(conto: Conto, forniture: list[dict[str, Any]]) -> None:
     """Completa il conto con i dati della (prima) fornitura attiva."""
+    forniture = [f for f in forniture or [] if isinstance(f, dict)]
     if not forniture:
         return
     attive = [f for f in forniture if str(f.get("status", "")).upper() == "ATTIVO"]
@@ -380,7 +410,9 @@ def aggiungi_fornitura(conto: Conto, forniture: list[dict[str, Any]]) -> None:
 def bollette_da(elenco: list[dict[str, Any]]) -> list[BollettaConto]:
     """Bollette dall'elenco dell'area clienti, dalla più recente."""
     bollette: list[BollettaConto] = []
-    for voce in elenco:
+    for voce in elenco or []:
+        if not isinstance(voce, dict):
+            continue
         numero = str(voce.get("numeroBolletta") or "").strip()
         if not numero:
             continue
@@ -401,6 +433,7 @@ def bollette_da(elenco: list[dict[str, Any]]) -> list[BollettaConto]:
 
 def consumi_da(forniture: list[dict[str, Any]], tipo: str | None) -> list[ConsumoMese]:
     """Consumi mensili, in ordine cronologico, della fornitura del tipo indicato."""
+    forniture = [f for f in forniture or [] if isinstance(f, dict)]
     scelta = next(
         (f for f in forniture if commodity(f.get("type")) == tipo),
         forniture[0] if len(forniture) == 1 else None,
@@ -408,7 +441,10 @@ def consumi_da(forniture: list[dict[str, Any]], tipo: str | None) -> list[Consum
     if scelta is None:
         return []
     mesi: dict[date, ConsumoMese] = {}
-    for voce in scelta.get("consumptions") or []:
+    voci = scelta.get("consumptions")
+    for voce in voci if isinstance(voci, list) else []:
+        if not isinstance(voce, dict):
+            continue
         anno, mese = _intero(voce.get("year")), _intero(voce.get("numericalMonth"))
         if anno is None or mese is None or not 0 <= mese <= 11:
             continue
@@ -424,8 +460,30 @@ def consumi_da(forniture: list[dict[str, Any]], tipo: str | None) -> list[Consum
             valore=round(totale, 3),
             fasce=fasce,
             parziale=bool(voce.get("isPartial")),
+            anno_precedente=_numero(voce.get("lastYearConsumptions")),
+            differenza_percentuale=_numero(voce.get("lastYearPercentDiff")),
         )
     return [mesi[m] for m in sorted(mesi)]
+
+
+def avvisi_da(elenco: list[dict[str, Any]]) -> list[Avviso]:
+    """Comunicazioni dell'area clienti, dalla più recente."""
+    avvisi: list[Avviso] = []
+    for voce in elenco or []:
+        if not isinstance(voce, dict) or not voce.get("description"):
+            continue
+        avvisi.append(
+            Avviso(
+                identificativo=str(voce.get("id") or ""),
+                data=_data(voce.get("date")),
+                descrizione=str(voce["description"]).strip(),
+                fornitura=commodity(voce.get("productType")),
+                sezione=voce.get("tab"),
+                letta=voce.get("read") is True,
+            )
+        )
+    avvisi.sort(key=lambda a: a.data or date.min, reverse=True)
+    return avvisi
 
 
 def aggiungi_lettura_luce(conto: Conto) -> None:
@@ -443,7 +501,7 @@ def aggiungi_lettura_luce(conto: Conto) -> None:
 
 def aggiungi_autolettura(conto: Conto, dati: dict[str, Any] | None) -> None:
     """Ultima lettura del contatore e finestra della prossima autolettura."""
-    if not dati:
+    if not isinstance(dati, dict) or not dati:
         return
     conto.lettura = _intero(dati.get("valoreAutolettura"))
     conto.data_lettura = _data(dati.get("data"))

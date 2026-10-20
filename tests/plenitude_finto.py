@@ -161,7 +161,7 @@ CONSUMI: dict[str, list[dict[str, Any]]] = {
                 _mese(2026, 1, consumptions=104),
                 _mese(2026, 6, consumptions=12),
                 _mese(2026, 7, consumptions=8),
-                _mese(2026, 9, consumptions=17),
+                _mese(2026, 9, consumptions=17, lastYearConsumptions=16, lastYearPercentDiff=6),
                 {**_mese(2026, 10, consumptions=3), "isPartial": True},
             ],
         }
@@ -222,6 +222,17 @@ class FintoPlenitude:
         self.bollette = copy.deepcopy(BOLLETTE)
         self.consumi = copy.deepcopy(CONSUMI)
         self.autoletture = copy.deepcopy(AUTOLETTURE)
+        self.avvisi: Any = [
+            {
+                "date": "2027-01-01",
+                "description": "Proposta di rinnovo delle Condizioni Economiche - gen 2027",
+                "id": "rnw_1",
+                "productType": "gas",
+                "read": False,
+                "tab": "condizioni economiche",
+            },
+            {"date": "2026-05-01", "description": "Comunicazione letta", "read": True},
+        ]
         self.errori: dict[str, HTTPStatus] = {}
         self.pdf_scaricati: list[str] = []
         self.parametri_gigya: dict[str, dict[str, Any]] = {}
@@ -317,6 +328,8 @@ class FintoPlenitude:
             return self._risposta(
                 method, url, json={"codiceCliente": "800000001", "codiceContoDefault": CONTO_GAS}
             )
+        if re.fullmatch(r"/api/contiServices/(\d+)/notifiche/alerts", percorso):
+            return self._risposta(method, url, json={"data": self.avvisi, "ok": True})
         if m := re.fullmatch(r"/api/contiServices/conti/(\d+)", percorso):
             return self._risposta(method, url, json={"conto": self.conti})
         if m := re.fullmatch(r"/api/contiServices/conti/(\d+)/lista-forniture", percorso):

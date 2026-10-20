@@ -256,6 +256,10 @@ def _attributi_consumo(conto: Conto) -> dict[str, Any] | None:
     if (c := conto.ultimo_consumo) is None:
         return None
     attributi: dict[str, Any] = {"mese": c.mese.strftime("%Y-%m"), "parziale": c.parziale}
+    if c.anno_precedente is not None:
+        attributi["anno_precedente"] = c.anno_precedente
+    if c.differenza_percentuale is not None:
+        attributi["differenza_percentuale"] = c.differenza_percentuale
     attributi.update({f"fascia_{f.lower()}": v for f, v in c.fasce.items()})
     return attributi
 
@@ -478,7 +482,13 @@ async def async_setup_entry(
         async_add_entities(PlenitudeSensor(coordinator, d) for d in SENSORI)
         return
 
-    async_add_entities([UltimoAggiornamentoSensor(coordinator), SpesaTotaleSensor(coordinator)])
+    async_add_entities(
+        [
+            UltimoAggiornamentoSensor(coordinator),
+            SpesaTotaleSensor(coordinator),
+            ComunicazioniSensor(coordinator),
+        ]
+    )
     noti: set[str] = set()
 
     @callback
@@ -557,6 +567,39 @@ class UltimoAggiornamentoSensor(CoordinatorEntity[PlenitudeAccountCoordinator], 
     def native_value(self) -> datetime | None:
         """Ora dell'ultimo aggiornamento."""
         return self.coordinator.data.ultimo_aggiornamento
+
+
+class ComunicazioniSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):
+    """Comunicazioni non lette dell'area clienti (es. proposte di rinnovo delle condizioni)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "comunicazioni"
+
+    def __init__(self, coordinator: PlenitudeAccountCoordinator) -> None:
+        """Inizializza il sensore."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_comunicazioni"
+        self._attr_device_info = info_account(coordinator)
+
+    @property
+    def native_value(self) -> int:
+        """Quante comunicazioni non sono ancora state lette."""
+        return sum(1 for a in self.coordinator.data.avvisi if not a.letta)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Le ultime comunicazioni."""
+        return {
+            "comunicazioni": [
+                {
+                    "data": _iso(a.data),
+                    "descrizione": a.descrizione,
+                    "fornitura": a.fornitura,
+                    "letta": a.letta,
+                }
+                for a in self.coordinator.data.avvisi[:10]
+            ]
+        }
 
 
 class SpesaTotaleSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):

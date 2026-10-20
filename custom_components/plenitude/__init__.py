@@ -21,7 +21,7 @@ from .const import (
 )
 from .coordinator import PlenitudeAccountCoordinator, PlenitudeConfigEntry, PlenitudeCoordinator
 
-PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
 
 
 def sessione_da_entry(entry: PlenitudeConfigEntry) -> Sessione:

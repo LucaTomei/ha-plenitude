@@ -74,7 +74,8 @@
     "abort": {
       "already_configured": "Plenitude è già configurato.",
       "reauth_successful": "Nuovo accesso eseguito.",
-      "account_diverso": "È un account Plenitude diverso da quello configurato."
+      "account_diverso": "È un account Plenitude diverso da quello configurato.",
+      "already_in_progress": "È già in corso una configurazione per questo account Plenitude."
     }
   },
   "options": {
@@ -100,6 +101,11 @@
     "button": {
       "scarica_bollette": {
         "name": "Scarica le bollette"
+      }
+    },
+    "calendar": {
+      "scadenze": {
+        "name": "Scadenze"
       }
     },
     "sensor": {
@@ -192,6 +198,12 @@
           },
           "fascia_f3": {
             "name": "Fascia F3"
+          },
+          "anno_precedente": {
+            "name": "Stesso mese dell'anno precedente"
+          },
+          "differenza_percentuale": {
+            "name": "Differenza rispetto all'anno precedente (%)"
           }
         }
       },
@@ -392,6 +404,14 @@
           },
           "condizioni_scadute": {
             "name": "Condizioni economiche scadute"
+          }
+        }
+      },
+      "comunicazioni": {
+        "name": "Comunicazioni non lette",
+        "state_attributes": {
+          "comunicazioni": {
+            "name": "Comunicazioni"
           }
         }
       }

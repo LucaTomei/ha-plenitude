@@ -155,6 +155,7 @@ class PlenitudeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._email: str | None = None
         self._verifica: VerificaInCorso | None = None
         self._sessione: Sessione | None = None
+        self._errore_invio = "cannot_connect"
 
     @staticmethod
     @callback
@@ -182,7 +183,7 @@ class PlenitudeConfigFlow(ConfigFlow, domain=DOMAIN):
             errors = await self._accedi(self._email, user_input[CONF_PASSWORD])
             if not errors and (risultato := await self._dopo_accesso()) is not None:
                 return risultato
-            errors = errors or {"base": "cannot_connect"}
+            errors = errors or {"base": self._errore_invio}
         return self.async_show_form(
             step_id="account",
             data_schema=self.add_suggested_values_to_schema(
@@ -225,8 +226,16 @@ class PlenitudeConfigFlow(ConfigFlow, domain=DOMAIN):
         verifica = self._verifica
         try:
             self._verifica = await self._con_client(lambda c: c.invia_codice(verifica))
+        except AccountBloccato:
+            self._errore_invio = "account_bloccato"
+            return None
         except PlenitudeError as err:
             _LOGGER.debug("Codice di verifica non inviato: %s", err)
+            self._errore_invio = "cannot_connect"
+            return None
+        except Exception:
+            _LOGGER.exception("Errore inatteso nell'invio del codice di verifica")
+            self._errore_invio = "unknown"
             return None
         return await self.async_step_codice()
 
@@ -320,7 +329,7 @@ class PlenitudeConfigFlow(ConfigFlow, domain=DOMAIN):
             errors = await self._accedi(self._email, user_input[CONF_PASSWORD])
             if not errors and (risultato := await self._dopo_accesso()) is not None:
                 return risultato
-            errors = errors or {"base": "cannot_connect"}
+            errors = errors or {"base": self._errore_invio}
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=self.add_suggested_values_to_schema(
@@ -357,7 +366,17 @@ class PlenitudeOptionsFlow(OptionsFlowWithReload):
         """Modifica delle opzioni."""
         da_account = CONF_SESSIONE in self.config_entry.data
         if user_input is not None:
-            return self.async_create_entry(data=_normalizza(user_input))
+            opzioni = _normalizza(user_input)
+            # il conto gas si sceglie solo a integrazione caricata: se il campo non c'era
+            # si mantiene la scelta precedente
+            if (
+                da_account
+                and CONF_CONTO_GAS not in user_input
+                and not self._conti_gas()
+                and (precedente := self.config_entry.options.get(CONF_CONTO_GAS))
+            ):
+                opzioni[CONF_CONTO_GAS] = precedente
+            return self.async_create_entry(data=opzioni)
         return self.async_show_form(
             step_id="init",
             data_schema=_schema_opzioni(

@@ -438,13 +438,14 @@ async def test_prezzo_medio(hass: HomeAssistant, finto: FintoPlenitude) -> None:
 
     await _avvia(hass)
     luce = _stato(hass, f"{CONTO_LUCE}_prezzo_medio")
-    # totale della fornitura (310,78 €), senza i 18 € di canone RAI
-    assert float(luce.state) == pytest.approx(310.78 / 470, abs=1e-4)
-    assert luce.attributes["importo"] == 310.78
+    # dalle voci di costo della bolletta (consumi, accise, quote fisse, IVA), senza canone RAI
+    energia = (231.42 + 13.23) * 1.10 / 708
+    fissa = (13.01 + 1.976667 * 3) * 1.10 * 2 / 708
+    assert float(luce.state) == pytest.approx(energia + fissa, abs=1e-4)
+    assert luce.attributes["consumo"] == 708
     assert luce.attributes["unit_of_measurement"] == "€/kWh"
     assert luce.attributes["unit_of_measurement"].endswith(validate.ENERGY_PRICE_UNITS)
     assert luce.attributes["periodo_dal"] == "2026-08-01"
-    assert luce.attributes["consumo"] == 470
     assert "device_class" not in luce.attributes
     gas = _stato(hass, f"{CONTO_GAS}_prezzo_medio")
     assert float(gas.state) == pytest.approx(63.32 / 20, abs=1e-4)
@@ -594,3 +595,137 @@ async def test_indici_e_offerta(hass: HomeAssistant, finto: FintoPlenitude) -> N
     assert offerta.attributes["tipologia"] == "VARIABILE"
     assert offerta.attributes["condizioni_al"] == "2025-04-01"
     assert offerta.attributes["condizioni_scadute"] is True
+
+
+async def test_pdf_non_disponibile_riprovato_dopo_un_giorno(
+    hass: HomeAssistant, finto: FintoPlenitude
+) -> None:
+    """Un PDF non ancora disponibile si riprova dopo 24 ore, non a ogni aggiornamento."""
+    from custom_components.plenitude import coordinator as modulo
+
+    finto.bollette[CONTO_GAS].insert(
+        0, {**finto.bollette[CONTO_GAS][0], "numeroBolletta": "9000000098"}
+    )
+    entry = await _avvia(hass)
+    richieste = [c for c in finto.mock.mock_calls if "9000000098" in str(c[1])]
+    assert len(richieste) == 1
+    await _aggiorna(hass, entry)
+    assert len([c for c in finto.mock.mock_calls if "9000000098" in str(c[1])]) == 1
+    adesso = modulo.time.monotonic()
+    with patch.object(modulo.time, "monotonic", return_value=adesso + modulo.RIPROVA_PDF + 1):
+        await _aggiorna(hass, entry)
+    assert len([c for c in finto.mock.mock_calls if "9000000098" in str(c[1])]) == 2
+
+
+async def test_errore_di_scrittura_non_ferma_i_download(
+    hass: HomeAssistant, finto: FintoPlenitude, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Se un PDF non si riesce a salvare (es. disco pieno) gli altri proseguono."""
+    from custom_components.plenitude import coordinator as modulo
+
+    originale = modulo._salva
+
+    def salva(percorso, dati):
+        if percorso.stem == "9000000004":
+            raise OSError("disco pieno")
+        originale(percorso, dati)
+
+    with patch.object(modulo, "_salva", salva):
+        entry = await _avvia(hass)
+    assert entry.state is ConfigEntryState.LOADED
+    assert "Impossibile salvare la bolletta" in caplog.text
+    assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "3"
+
+
+async def test_numero_bolletta_non_usabile_come_file(
+    hass: HomeAssistant, finto: FintoPlenitude
+) -> None:
+    """Un numero di bolletta strano non diventa un percorso fuori dall'archivio."""
+    finto.bollette[CONTO_GAS].insert(
+        0, {**finto.bollette[CONTO_GAS][0], "numeroBolletta": "../../evil"}
+    )
+    await _avvia(hass)
+    assert not [c for c in finto.mock.mock_calls if "evil" in str(c[1])]
+
+
+async def test_cache_di_un_lettore_precedente(
+    hass: HomeAssistant, finto: FintoPlenitude, hass_storage: dict
+) -> None:
+    """Con un lettore aggiornato i dati vecchi restano validi e i PDF si rileggono una volta."""
+    from custom_components.plenitude import pdf
+
+    entry = await _avvia(hass)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    chiave = f"{DOMAIN}.{entry.entry_id}.bollette"
+    for voce in hass_storage[chiave]["data"]["bollette"].values():
+        voce["v"] = 0
+    letture = pdf.estrai_testo.call_count
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert pdf.estrai_testo.call_count == letture + 6
+    assert _stato(hass, f"{CONTO_GAS}_bollette_lette").state == "4"
+    await _aggiorna(hass, entry)
+    assert pdf.estrai_testo.call_count == letture + 6  # mai più rilette
+
+
+async def test_comunicazioni(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Comunicazioni dell'area clienti: quante non lette, con l'elenco."""
+    entry = await _avvia(hass)
+    stato = _stato(hass, f"{entry.entry_id}_comunicazioni")
+    assert stato.state == "1"
+    prima = stato.attributes["comunicazioni"][0]
+    assert prima["data"] == "2027-01-01"
+    assert prima["fornitura"] == "gas"
+    assert prima["letta"] is False
+    # se non si riescono a leggere restano quelle già note
+    finto.errori["/api/contiServices/800000001"] = HTTPStatus.INTERNAL_SERVER_ERROR
+    await _aggiorna(hass, entry)
+    assert _stato(hass, f"{entry.entry_id}_comunicazioni").state == "1"
+
+
+async def test_confronto_anno_precedente(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Il consumo dell'ultimo mese riporta lo stesso mese dell'anno prima."""
+    await _avvia(hass)
+    consumo = _stato(hass, f"{CONTO_GAS}_consumo_ultimo_mese")
+    assert consumo.attributes["anno_precedente"] == 16
+    assert consumo.attributes["differenza_percentuale"] == 6
+
+
+async def test_calendario(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+    """Calendario con scadenze delle bollette, autolettura del gas e comunicazioni."""
+    from datetime import datetime
+
+    from custom_components.plenitude.calendar import eventi
+
+    entry = await _avvia(hass)
+    elenco = eventi(entry.runtime_data.data)
+    titoli = [(e.start.isoformat(), e.summary) for e in elenco]
+    assert ("2026-11-03", "Scadenza bolletta luce · 328,78 €") in titoli
+    assert ("2026-09-22", "Scadenza bolletta gas · 63,32 €") in titoli
+    assert ("2026-11-24", "Autolettura gas") in titoli
+    assert (
+        "2027-01-01",
+        "Proposta di rinnovo delle Condizioni Economiche - gen 2027",
+    ) in titoli
+    autolettura = next(e for e in elenco if e.summary == "Autolettura gas")
+    assert autolettura.end.isoformat() == "2026-11-29"
+    da_pagare = next(e for e in elenco if e.summary.startswith("Scadenza bolletta luce · 153"))
+    assert "Da pagare: 20,50 €" in da_pagare.description
+
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "calendar", DOMAIN, f"{entry.entry_id}_scadenze"
+    )
+    risposta = await hass.services.async_call(
+        "calendar",
+        "get_events",
+        {
+            "entity_id": entity_id,
+            "start_date_time": datetime(2026, 11, 1, 0, 0).isoformat(),
+            "end_date_time": datetime(2026, 11, 30, 23, 59).isoformat(),
+        },
+        blocking=True,
+        return_response=True,
+    )
+    riassunti = {e["summary"] for e in risposta[entity_id]["events"]}
+    assert riassunti == {"Scadenza bolletta luce · 328,78 €", "Autolettura gas"}

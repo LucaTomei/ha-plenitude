@@ -130,11 +130,20 @@ class SorgenteCartella(SorgenteBollette):
     def _leggi(self) -> list[bytes]:
         if not self._cartella.is_dir():
             raise PlenitudeError(f"cartella delle bollette non trovata: {self._cartella}")
-        return [
-            f.read_bytes()
-            for f in sorted(self._cartella.iterdir())
-            if f.suffix.lower() == ".pdf" and f.is_file()
-        ]
+        contenuti: list[bytes] = []
+        try:
+            file = sorted(self._cartella.iterdir())
+        except OSError as err:
+            raise PlenitudeError(f"cartella delle bollette non leggibile: {err}") from err
+        for f in file:
+            if f.suffix.lower() != ".pdf":
+                continue
+            try:
+                if f.is_file():
+                    contenuti.append(f.read_bytes())
+            except OSError as err:
+                _LOGGER.warning("Bolletta %s non leggibile, ignorata: %s", f.name, err)
+        return contenuti
 
 
 def _codice_sbagliato(corpo: dict[str, Any]) -> bool:
@@ -485,28 +494,33 @@ class ClientPlenitude:
     async def conti(self, codice_conto: str) -> list[dict[str, Any]]:
         """Tutti i conti (forniture luce e gas) dell'utente."""
         risposta = await self._api("GET", f"/api/contiServices/conti/{codice_conto}")
-        return list((risposta or {}).get("conto") or [])
+        return _elenco(risposta, "conto")
 
     async def forniture(self, codice_conto: str) -> list[dict[str, Any]]:
         """Forniture (PDR/POD, contatore, offerta) di un conto."""
         risposta = await self._api(
             "GET", f"/api/contiServices/conti/{codice_conto}/lista-forniture"
         )
-        return list((risposta or {}).get("fornitura") or [])
+        return _elenco(risposta, "fornitura")
 
     async def bollette(self, codice_conto: str) -> list[dict[str, Any]]:
         """Elenco delle bollette di un conto (dalla più recente)."""
         risposta = await self._api(
             "GET", f"/c360/api/conti/{codice_conto}/bollette", intestazioni={"canale": "MOBILE"}
         )
-        return list((risposta or {}).get("bollette") or [])
+        return _elenco(risposta, "bollette")
 
     async def consumi(self, codice_conto: str) -> list[dict[str, Any]]:
         """Consumi mensili delle forniture di un conto."""
         risposta = await self._api(
             "GET", "/api/consumptionData", parametri={"codiceContoCliente": codice_conto}
         )
-        return list((risposta or {}).get("supplies") or [])
+        return _elenco(risposta, "supplies")
+
+    async def avvisi(self, codice_cliente: str) -> list[dict[str, Any]]:
+        """Comunicazioni dell'area clienti (es. proposte di rinnovo delle condizioni)."""
+        risposta = await self._api("GET", f"/api/contiServices/{codice_cliente}/notifiche/alerts")
+        return _elenco(risposta, "data")
 
     async def autolettura(self, codice_conto: str) -> dict[str, Any] | None:
         """Ultima autolettura e prossima finestra utile."""
@@ -526,6 +540,12 @@ class ClientPlenitude:
         if not dati or not dati.startswith(b"%PDF"):
             raise RisorsaNonDisponibile(f"PDF della bolletta {oscura(numero_bolletta)} assente")
         return dati
+
+
+def _elenco(risposta: Any, chiave: str) -> list[dict[str, Any]]:
+    """Voci (dizionari) di un elenco nella risposta; ignora tutto ciò che ha un'altra forma."""
+    voci = risposta.get(chiave) if isinstance(risposta, dict) else None
+    return [v for v in voci if isinstance(v, dict)] if isinstance(voci, list) else []
 
 
 class _NonAutorizzato(PlenitudeError):
