@@ -195,9 +195,19 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         self._pdf_non_disponibili: dict[tuple[str, str], float] = {}
         # unica attività in background: download dei PDF mancanti e lettura di quelli nuovi
         self._lavoro: asyncio.Task | None = None
+        # un aggiornamento è in corso: i risultati del background li applica lui
+        self._in_aggiornamento = False
+        self._ricalcolo_pendente = False
 
     async def _async_update_data(self) -> DatiAccount:
         """Legge i dati dell'account."""
+        self._in_aggiornamento = True
+        try:
+            return await self._aggiorna()
+        finally:
+            self._in_aggiornamento = False
+
+    async def _aggiorna(self) -> DatiAccount:
         try:
             utente = await self.client.utente()
             dati_utente = utente if isinstance(utente, dict) else {}
@@ -230,10 +240,20 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
             self._lette = await self._carica_memoria()
         self._applica_pdf(conti)
         await self._pianifica_lavoro(conti)
-        await self._aggiorna_derivati(conti, consumi=True)
         avvisi = await self._avvisi(
             dati_utente, precedenti_avvisi=self.data.avvisi if self.data else []
         )
+        # i PDF letti in background mentre l'aggiornamento è in corso finiscono nella
+        # cache: prima di chiudere si riapplicano, finché non ne arrivano altri
+        consumi = True
+        while True:
+            self._ricalcolo_pendente = False
+            self._applica_pdf(conti)
+            await self._aggiorna_derivati(conti, consumi=consumi)
+            consumi = False
+            if not self._ricalcolo_pendente:
+                break
+        self._applica_pdf(conti)
         return DatiAccount(conti=conti, avvisi=avvisi, ultimo_aggiornamento=dt_util.utcnow())
 
     async def _avvisi(
@@ -510,10 +530,24 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         if not lette:
             return
         await self._memoria.async_save(self._dati_memoria())
-        if self.data is not None:
-            self._applica_pdf(self.data.conti)
-            await self._aggiorna_derivati(self.data.conti, consumi=False)
-            self.async_set_updated_data(replace(self.data))
+        await self._ricalcola()
+
+    async def _ricalcola(self) -> None:
+        """Aggiorna i dati con le bollette appena lette, senza richiamare l'area clienti."""
+        if self._in_aggiornamento:
+            # ci pensa l'aggiornamento in corso, prima di chiudersi
+            self._ricalcolo_pendente = True
+            return
+        if self.data is None:
+            return
+        self._applica_pdf(self.data.conti)
+        await self._aggiorna_derivati(self.data.conti, consumi=False)
+        if self._in_aggiornamento or self.data is None:
+            self._ricalcolo_pendente = True
+            return
+        # i dati possono essere cambiati durante l'attesa: si riapplica la cache all'ultimo
+        self._applica_pdf(self.data.conti)
+        self.async_set_updated_data(replace(self.data))
 
     def _periodi_collegati(self, conti: dict[str, Conto]) -> list[PeriodoTariffario]:
         """Periodi tariffari del conto gas collegato a MyItalgas."""

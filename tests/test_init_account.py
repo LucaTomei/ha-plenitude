@@ -729,3 +729,23 @@ async def test_calendario(hass: HomeAssistant, finto: FintoPlenitude) -> None:
     )
     riassunti = {e["summary"] for e in risposta[entity_id]["events"]}
     assert riassunti == {"Scadenza bolletta luce · 328,78 €", "Autolettura gas"}
+
+
+async def test_pdf_letto_mentre_aggiornamento_in_corso(
+    hass: HomeAssistant, finto: FintoPlenitude
+) -> None:
+    """Se un PDF finisce di essere letto mentre un aggiornamento è ancora in corso, i suoi
+    dati non vanno persi quando l'aggiornamento si chiude."""
+    from .plenitude_finto import PDF_LUCE
+
+    testo = PDF_LUCE.pop("9100000002")
+    try:
+        entry = await _avvia(hass)
+    finally:
+        PDF_LUCE["9100000002"] = testo
+    assert _stato(hass, f"{CONTO_LUCE}_prezzo_medio").attributes["numero"] == "9100000001"
+    # l'aggiornamento resta aperto più a lungo del download e della lettura del PDF
+    finto.ritardo_avvisi = 0.3
+    assert await entry.runtime_data.async_scarica_bollette()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert _stato(hass, f"{CONTO_LUCE}_prezzo_medio").attributes["numero"] == "9100000002"

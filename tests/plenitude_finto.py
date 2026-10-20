@@ -212,6 +212,8 @@ class FintoPlenitude:
         self.account_bloccato = False
         self.asserzione_scaduta = False
         self.token_rifiutati = 0
+        # ritardo (secondi) della risposta alle comunicazioni, per simulare la rete lenta
+        self.ritardo_avvisi = 0.0
         self.token_emessi = 0
         self.token_revocati: set[str] = set()
         self.errori_temporanei_pdf = 0
@@ -329,6 +331,7 @@ class FintoPlenitude:
                 method, url, json={"codiceCliente": "800000001", "codiceContoDefault": CONTO_GAS}
             )
         if re.fullmatch(r"/api/contiServices/(\d+)/notifiche/alerts", percorso):
+            await asyncio.sleep(self.ritardo_avvisi)
             return self._risposta(method, url, json={"data": self.avvisi, "ok": True})
         if m := re.fullmatch(r"/api/contiServices/conti/(\d+)", percorso):
             return self._risposta(method, url, json={"conto": self.conti})

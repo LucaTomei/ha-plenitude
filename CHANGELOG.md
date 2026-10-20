@@ -29,6 +29,8 @@ Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 - Dati inattesi dall'area clienti (voci non valide, date impossibili, importi negativi)
   non bloccano più l'aggiornamento.
 - Le opzioni non perdono il conto gas scelto se salvate a integrazione non caricata.
+- Una bolletta letta in background mentre un aggiornamento era in corso poteva non
+  comparire fino all'aggiornamento successivo.
 
 ## [0.7.0] - 2026-10-20
 
