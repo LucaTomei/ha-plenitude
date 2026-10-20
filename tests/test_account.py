@@ -170,3 +170,46 @@ def test_prezzo_gas_per_scaglione() -> None:
         account.ConsumoMese(date(2026, 1, 1), 50, {}, False),
     ]
     assert conto.prezzo_gas.scaglione == 1
+
+
+def test_spese_mensili_gas() -> None:
+    """Gas: quota fissa del mese dalla bolletta, il resto in proporzione ai consumi."""
+    from custom_components.plenitude.bollette import PeriodoTariffario
+
+    conto = account.conto_da(CONTI[0])
+    conto.bollette = account.bollette_da([BOLLETTE[CONTO_GAS][0]])  # 63,32 €
+    conto.periodi_bollette = {"9000000004": (date(2026, 6, 1), date(2026, 7, 31))}
+    conto.periodi = [
+        PeriodoTariffario(date(2026, 6, 1), 0.9, 1.3, 1.5, 17.6),
+        PeriodoTariffario(date(2026, 7, 1), 0.9, 1.3, 1.5, 17.6),
+    ]
+    conto.consumi = [
+        account.ConsumoMese(date(2026, 6, 1), 12, {}, False),
+        account.ConsumoMese(date(2026, 7, 1), 8, {}, False),
+    ]
+    variabile = 63.32 - 2 * 17.6
+    assert conto.spese_mensili == {
+        date(2026, 6, 1): round(17.6 + variabile * 12 / 20, 2),
+        date(2026, 7, 1): round(17.6 + variabile * 8 / 20, 2),
+    }
+
+
+def test_spese_mensili_senza_consumi_o_con_rimborso() -> None:
+    """Senza consumi del periodo, o con un importo negativo, si divide in parti uguali."""
+    conto = account.conto_da(CONTI[1])
+    conto.bollette = account.bollette_da(
+        [
+            {**BOLLETTE[CONTO_LUCE][0], "numeroBolletta": "1", "importo": 100.0},
+            {**BOLLETTE[CONTO_LUCE][1], "numeroBolletta": "2", "importo": -20.0},
+        ]
+    )
+    conto.periodi_bollette = {
+        "1": (date(2026, 8, 1), date(2026, 9, 30)),
+        "2": (date(2026, 6, 1), date(2026, 7, 31)),
+    }
+    assert conto.spese_mensili == {
+        date(2026, 6, 1): -10.0,
+        date(2026, 7, 1): -10.0,
+        date(2026, 8, 1): 50.0,
+        date(2026, 9, 1): 50.0,
+    }

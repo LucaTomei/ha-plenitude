@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 4
+VERSIONE_LETTURA = 5
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -325,6 +325,9 @@ _RE_QUOTA_POTENZA = re.compile(r"QUOTA POTENZA\s+[\d,]+\s*kW\s*x\s*\d+\s+mes[ei]
 _RE_TOTALE_FORNITURA_LUCE = re.compile(
     r"(?:Totale fornitura di luce e imposte|Totale bolletta salvo ricalcolo)\s+(-?[\d.,]+)\s*€"
 )
+_RE_CANONE_RAI = re.compile(
+    r"Totale canone di abbonamento alla televisione per uso privato\s+(-?[\d.,]+)\s*€"
+)
 _RE_IMPOSTE_LUCE = re.compile(r"Totale Imposte\s+(-?[\d.,]+)\s*€")
 _RE_LETTURA_LUCE = re.compile(
     r"(?:Rilevat[ao]|Stimat[ao]|Autolettura)[^\n]*?(\d{2}/\d{2}/\d{4})\s+(\d+)\s+(\d+)\s+(\d+)"
@@ -351,6 +354,7 @@ class BollettaLuce:
     importo_quota_consumi: float | None = None
     quota_fissa_mese: float | None = None
     quota_potenza_kw_mese: float | None = None
+    canone_rai: float | None = None
     imposte: float | None = None
     data_lettura: date | None = None
     letture: dict[str, int] = field(default_factory=dict)
@@ -362,6 +366,14 @@ class BollettaLuce:
             return None
         variabile = self.importo_quota_consumi + (self.imposte or 0.0)
         return round(variabile * IVA_AGEVOLATA / self.consumo_quota_kwh, 4)
+
+    def quota_fissa_mensile(self) -> float:
+        """Parte fissa di ogni mese: quota fissa e quota potenza con IVA, più il canone RAI."""
+        mesi = len(_mesi_coperti(self.dal, self.al)) or 1
+        fissa = (self.quota_fissa_mese or 0.0) + (self.quota_potenza_kw_mese or 0.0) * (
+            self.potenza_impegnata or 0.0
+        )
+        return fissa * IVA_AGEVOLATA + (self.canone_rai or 0.0) / mesi
 
     @property
     def lettura_totale(self) -> int | None:
@@ -396,6 +408,8 @@ def analizza_luce(testo: str) -> BollettaLuce | None:
         b.quota_potenza_kw_mese = _numero(m[1])
     if m := _RE_IMPOSTE_LUCE.search(testo):
         b.imposte = _numero(m[1])
+    if m := _RE_CANONE_RAI.search(testo):
+        b.canone_rai = _numero(m[1])
     letture = [(_data(m[1]), m) for m in _RE_LETTURA_LUCE.finditer(testo)]
     if letture:
         giorno, m = max(letture, key=lambda x: x[0])

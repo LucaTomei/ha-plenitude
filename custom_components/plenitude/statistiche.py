@@ -62,6 +62,78 @@ async def importa_consumi(hass: HomeAssistant, conti: dict[str, Conto]) -> None:
 
 
 async def _importa(hass: HomeAssistant, conto: Conto) -> None:
+    unita, classe = _UNITA[conto.commodity]
+    nome = "luce" if conto.commodity == LUCE else "gas"
+    await _importa_serie(
+        hass,
+        id_statistica(conto),
+        nome=f"Plenitude consumo {nome} {conto.codice}",
+        unita=unita,
+        classe=classe,
+        valori=[(c.mese, c.valore) for c in conto.consumi],
+    )
+
+
+def id_statistica_spesa(conto: Conto) -> str:
+    """Identificativo della statistica della spesa mensile di un conto."""
+    return f"{DOMAIN}:spesa_{conto.commodity}_{conto.codice}".lower()
+
+
+def id_statistica_spesa_totale(uid: str) -> str:
+    """Identificativo della statistica della spesa mensile totale (luce + gas) dell'account."""
+    return f"{DOMAIN}:spesa_totale_{uid}".lower()
+
+
+def spese_totali(conti: dict[str, Conto]) -> dict[date, float]:
+    """Spesa di luce e gas insieme, solo per i mesi già fatturati per tutte le forniture."""
+    serie = [c.spese_mensili for c in conti.values() if c.commodity in _UNITA]
+    serie = [s for s in serie if s]
+    if not serie:
+        return {}
+    comuni = set.intersection(*(set(s) for s in serie))
+    return {m: round(sum(s[m] for s in serie), 2) for m in sorted(comuni)}
+
+
+async def importa_spese(hass: HomeAssistant, conti: dict[str, Conto], uid: str) -> None:
+    """Importa la spesa mensile di ogni conto e quella totale (se il recorder è attivo)."""
+    if "recorder" not in hass.config.components:
+        return
+    serie: list[tuple[str, str, dict[date, float]]] = [
+        (
+            id_statistica_spesa(c),
+            f"Plenitude spesa {'luce' if c.commodity == LUCE else 'gas'} {c.codice}",
+            c.spese_mensili,
+        )
+        for c in conti.values()
+        if c.commodity in _UNITA
+    ]
+    serie.append((id_statistica_spesa_totale(uid), "Plenitude spesa totale", spese_totali(conti)))
+    for statistic_id, nome, spese in serie:
+        if not spese:
+            continue
+        try:
+            await _importa_serie(
+                hass,
+                statistic_id,
+                nome=nome,
+                unita="EUR",
+                classe=None,
+                valori=list(spese.items()),
+            )
+        except Exception:
+            _LOGGER.exception("Importazione della spesa %s non riuscita", oscura(statistic_id))
+
+
+async def _importa_serie(
+    hass: HomeAssistant,
+    statistic_id: str,
+    *,
+    nome: str,
+    unita: str,
+    classe: str | None,
+    valori: list[tuple[date, float]],
+) -> None:
+    """Importa una serie di valori mensili come somma progressiva."""
     from homeassistant.components.recorder.models import (
         StatisticData,
         StatisticMeanType,
@@ -69,8 +141,7 @@ async def _importa(hass: HomeAssistant, conto: Conto) -> None:
     )
     from homeassistant.components.recorder.statistics import async_add_external_statistics
 
-    statistic_id = id_statistica(conto)
-    mesi = [(_inizio_mese(c.mese), c.valore) for c in conto.consumi]
+    mesi = [(_inizio_mese(mese), valore) for mese, valore in valori]
     registrate = await _registrate(hass, statistic_id)
 
     primo = 0
@@ -87,7 +158,7 @@ async def _importa(hass: HomeAssistant, conto: Conto) -> None:
         somma = round(somma + valore, 3)
         dati.append(StatisticData(start=inizio, sum=somma))
     # mesi già registrati che l'area clienti non riporta più (es. un mese parziale tolto):
-    # restano a consumo zero, così la somma non torna mai indietro
+    # restano a zero, così la somma non torna mai indietro
     dati.extend(
         StatisticData(start=inizio, sum=somma)
         for inizio in sorted(registrate)
@@ -95,12 +166,10 @@ async def _importa(hass: HomeAssistant, conto: Conto) -> None:
     )
     registrate.update({d["start"]: d["sum"] for d in dati})
 
-    unita, classe = _UNITA[conto.commodity]
-    nome = "luce" if conto.commodity == LUCE else "gas"
     metadati = StatisticMetaData(
         mean_type=StatisticMeanType.NONE,
         has_sum=True,
-        name=f"Plenitude consumo {nome} {conto.codice}",
+        name=nome,
         source=DOMAIN,
         statistic_id=statistic_id,
         unit_class=classe,

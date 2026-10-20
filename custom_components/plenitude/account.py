@@ -132,6 +132,43 @@ class Conto:
         return len(self.bollette_pdf) if self.commodity == GAS else len(self.bollette_luce)
 
     @property
+    def spese_mensili(self) -> dict[date, float]:
+        """Spesa di ogni mese, ricavata dalle bollette (in ordine cronologico).
+
+        Ogni bolletta copre di solito due mesi. A ogni mese va la sua parte fissa (gas:
+        quota fissa del mese dalla bolletta; luce: quota fissa, quota potenza e canone
+        RAI); il resto dell'importo si divide in proporzione ai consumi dei mesi. La somma
+        dei mesi è sempre uguale all'importo pagato.
+        """
+        consumi = {c.mese: c.valore for c in self.consumi}
+        fisse_gas = {p.dal: p.quota_fissa for p in self.periodi}
+        spese: dict[date, float] = {}
+        for b in self.bollette:
+            periodo = self.periodi_bollette.get(b.numero)
+            if periodo is None or b.importo is None:
+                continue
+            mesi = mesi_del_periodo(*periodo)
+            if self.commodity == GAS:
+                fisse = {m: fisse_gas.get(m, 0.0) for m in mesi}
+            elif (luce := self.bollette_luce.get(b.numero)) is not None:
+                fisse = dict.fromkeys(mesi, luce.quota_fissa_mensile())
+            else:
+                fisse = dict.fromkeys(mesi, 0.0)
+            variabile = b.importo - sum(fisse.values())
+            if variabile < 0:  # bolletta di conguaglio o rimborso: si divide in parti uguali
+                fisse = dict.fromkeys(mesi, 0.0)
+                variabile = b.importo
+            pesi = {m: consumi.get(m) for m in mesi}
+            totale_pesi = sum(v for v in pesi.values() if v)
+            for m in mesi:
+                if totale_pesi > 0 and all(v is not None for v in pesi.values()):
+                    quota = variabile * (pesi[m] or 0.0) / totale_pesi
+                else:
+                    quota = variabile / len(mesi)
+                spese[m] = spese.get(m, 0.0) + fisse[m] + quota
+        return {m: round(spese[m], 2) for m in sorted(spese)}
+
+    @property
     def prezzo_gas(self) -> PrezzoGas | None:
         """Prezzo per Smc dell'ultimo periodo tariffario noto, nello scaglione attuale.
 

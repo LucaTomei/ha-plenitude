@@ -173,6 +173,7 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Emissione ultima bolletta | ✅ | ✅ | Data di emissione |
 | Da pagare | ✅ | ✅ | Totale ancora da pagare; negli attributi le bollette e la prossima scadenza |
 | Bollette da pagare | ✅ | ✅ | Quante bollette hanno un importo da pagare |
+| Spesa ultimo mese | ✅ | ✅ | € dell'ultimo mese fatturato; negli attributi la spesa di ogni mese degli ultimi 12 |
 | Consumo ultimo mese | ✅ | ✅ | kWh o Smc dell'ultimo mese completo; per la luce anche le fasce |
 | Consumo ultimi 12 mesi | ✅ | ✅ | kWh o Smc degli ultimi 12 mesi completi |
 | Prezzo medio | ✅ | ✅ | €/kWh o €/m³ effettivi dell'ultima bolletta: importo totale ÷ consumo del periodo |
@@ -184,6 +185,7 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Potenza impegnata | ✅ | | kW del contratto; negli attributi la potenza disponibile e la quota potenza |
 | Prossima autolettura | | ✅ | Inizio della prossima finestra per l'autolettura |
 | Bollette lette | ✅ | ✅ | Diagnostica: bollette PDF lette (per il gas anche i periodi tariffari ricavati) |
+| Spesa totale ultimo mese | | | Sul dispositivo dell'account: luce + gas dell'ultimo mese fatturato per entrambi, con i 12 mesi precedenti |
 | Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
 | Scarica le bollette | | | Pulsante, sul dispositivo dell'account: rilegge subito l'account e scarica le bollette mancanti |
 
@@ -233,6 +235,43 @@ I valori sono **mensili** (registrati all'inizio di ogni mese, con lo storico
 dall'attivazione della fornitura): guardali per mese o per anno. Il mese in corso e i
 due precedenti vengono aggiornati a ogni lettura, così le stime vengono sostituite dai
 consumi reali.
+
+### 📅 Spesa di ogni mese
+
+Le bollette coprono di solito due mesi: l'integrazione le divide mese per mese. A ogni
+mese va la sua parte fissa (gas: quota fissa del mese; luce: quota fissa, quota potenza e
+canone RAI) e il resto dell'importo è diviso in proporzione ai consumi di ciascun mese.
+La somma dei mesi è sempre uguale a quanto hai pagato.
+
+Oltre ai sensori *Spesa ultimo mese* e *Spesa totale ultimo mese*, le spese sono
+importate come statistiche in euro, con lo storico di tutte le bollette scaricate:
+
+| Statistica | Contenuto |
+|---|---|
+| `plenitude:spesa_luce_<conto>` | Spesa della luce |
+| `plenitude:spesa_gas_<conto>` | Spesa del gas |
+| `plenitude:spesa_totale_<account>` | Luce + gas, nei mesi già fatturati per entrambi |
+
+<details>
+<summary><b>Scheda con il grafico della spesa mese per mese</b></summary>
+
+Aggiungi una scheda manuale alla plancia (sostituisci gli identificativi con i tuoi, che
+trovi in **Strumenti per sviluppatori → Statistiche** cercando "plenitude"):
+
+```yaml
+type: statistics-graph
+title: Spesa Plenitude
+chart_type: bar
+period: month
+days_to_show: 365
+stat_types:
+  - change
+entities:
+  - plenitude:spesa_luce_<conto>
+  - plenitude:spesa_gas_<conto>
+```
+
+</details>
 
 ### 💶 Costi nel pannello Energia
 

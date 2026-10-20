@@ -315,6 +315,34 @@
             "name": "Fixed fee (€/month)"
           }
         }
+      },
+      "spesa_ultimo_mese": {
+        "name": "Last month spend",
+        "state_attributes": {
+          "mese": {
+            "name": "Month"
+          },
+          "mesi": {
+            "name": "Monthly spend"
+          },
+          "totale_12_mesi": {
+            "name": "Last 12 months total"
+          }
+        }
+      },
+      "spesa_totale_ultimo_mese": {
+        "name": "Total last month spend",
+        "state_attributes": {
+          "mese": {
+            "name": "Month"
+          },
+          "mesi": {
+            "name": "Monthly spend"
+          },
+          "totale_12_mesi": {
+            "name": "Last 12 months total"
+          }
+        }
       }
     }
   },

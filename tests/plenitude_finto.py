@@ -130,8 +130,15 @@ PDF_GAS: dict[str, str] = {
 
 
 # PDF (testo) delle bollette luce: serve solo il periodo fatturato
+_LUCE = (FIXTURES / "bolletta-luce-sintetica.txt").read_text(encoding="utf-8")
 PDF_LUCE: dict[str, str] = {
-    "9100000002": (FIXTURES / "bolletta-luce-sintetica.txt").read_text(encoding="utf-8"),
+    "9100000002": _LUCE,
+    # bolletta precedente: giugno e luglio
+    "9100000001": _LUCE.replace("dal 01/08/2026 al 30/09/2026", "dal 01/06/2026 al 31/07/2026")
+    .replace("emissione 09/10/2026", "emissione 10/08/2026")
+    .replace("entro il 03/11/2026", "entro il 04/09/2026")
+    .replace("questa bolletta 328,78", "questa bolletta 153,97")
+    .replace("luce e imposte 310,78", "luce e imposte 135,97"),
 }
 
 
@@ -158,6 +165,8 @@ CONSUMI: dict[str, list[dict[str, Any]]] = {
         {
             "type": "LUCE",
             "consumptions": [
+                _mese(2026, 6, consumptionsF1=50, consumptionsF2=30, consumptionsF3=40),
+                _mese(2026, 7, consumptionsF1=70, consumptionsF2=40, consumptionsF3=50),
                 _mese(2026, 8, consumptionsF1=90, consumptionsF2=60, consumptionsF3=80),
                 _mese(2026, 9, consumptionsF1=96, consumptionsF2=63, consumptionsF3=81),
             ],

@@ -2,6 +2,16 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.6.0] - 2026-10-20
+
+### Novità
+
+- **Spesa di ogni mese** per luce, gas e totale: le bollette (di solito bimestrali) sono
+  divise mese per mese, con la parte fissa di ogni mese e il resto in proporzione ai
+  consumi. Sensori *Spesa ultimo mese* e *Spesa totale ultimo mese*, con i 12 mesi
+  precedenti negli attributi, e statistiche in euro per i grafici.
+- Vengono scaricate fino a 24 bollette della luce, per avere lo storico completo.
+
 ## [0.5.1] - 2026-10-20
 
 ### Correzioni

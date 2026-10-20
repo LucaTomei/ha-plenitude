@@ -33,6 +33,7 @@ from .coordinator import (
     PlenitudeConfigEntry,
     PlenitudeCoordinator,
 )
+from .statistiche import spese_totali
 
 PARALLEL_UPDATES = 0
 
@@ -153,6 +154,22 @@ def _attributi_ultima(conto: Conto) -> dict[str, Any] | None:
         attributi["periodo_al"] = luce.al.isoformat()
         attributi["consumo_kwh"] = luce.consumo_kwh
     return attributi
+
+
+def _attributi_spese(spese: dict[date, float]) -> dict[str, Any] | None:
+    """Mese dell'ultima spesa e spese degli ultimi 12 mesi fatturati."""
+    if not spese:
+        return None
+    mesi = sorted(spese)[-12:]
+    return {
+        "mese": mesi[-1].strftime("%Y-%m"),
+        "mesi": {m.strftime("%Y-%m"): spese[m] for m in mesi},
+        "totale_12_mesi": round(sum(spese[m] for m in mesi), 2),
+    }
+
+
+def _ultima_spesa(spese: dict[date, float]) -> float | None:
+    return spese[max(spese)] if spese else None
 
 
 def _attributi_lettura(conto: Conto) -> dict[str, Any]:
@@ -299,6 +316,15 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
         attributi=_attributi_12_mesi,
     ),
     ContoSensorDescription(
+        key="spesa_ultimo_mese",
+        translation_key="spesa_ultimo_mese",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement=CURRENCY_EURO,
+        suggested_display_precision=2,
+        valore=lambda c: _ultima_spesa(c.spese_mensili),
+        attributi=lambda c: _attributi_spese(c.spese_mensili),
+    ),
+    ContoSensorDescription(
         key="prezzo_medio",
         translation_key="prezzo_medio",
         state_class=SensorStateClass.MEASUREMENT,
@@ -395,7 +421,7 @@ async def async_setup_entry(
         async_add_entities(PlenitudeSensor(coordinator, d) for d in SENSORI)
         return
 
-    async_add_entities([UltimoAggiornamentoSensor(coordinator)])
+    async_add_entities([UltimoAggiornamentoSensor(coordinator), SpesaTotaleSensor(coordinator)])
     noti: set[str] = set()
 
     @callback
@@ -474,6 +500,32 @@ class UltimoAggiornamentoSensor(CoordinatorEntity[PlenitudeAccountCoordinator], 
     def native_value(self) -> datetime | None:
         """Ora dell'ultimo aggiornamento."""
         return self.coordinator.data.ultimo_aggiornamento
+
+
+class SpesaTotaleSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):
+    """Spesa di luce e gas insieme nell'ultimo mese già fatturato per tutte le forniture."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "spesa_totale_ultimo_mese"
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_native_unit_of_measurement = CURRENCY_EURO
+    _attr_suggested_display_precision = 2
+
+    def __init__(self, coordinator: PlenitudeAccountCoordinator) -> None:
+        """Inizializza il sensore."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_spesa_totale_ultimo_mese"
+        self._attr_device_info = info_account(coordinator)
+
+    @property
+    def native_value(self) -> float | None:
+        """Spesa totale dell'ultimo mese."""
+        return _ultima_spesa(spese_totali(self.coordinator.data.conti))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Spese degli ultimi 12 mesi."""
+        return _attributi_spese(spese_totali(self.coordinator.data.conti))
 
 
 class ContoSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):

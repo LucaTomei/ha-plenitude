@@ -222,6 +222,8 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
             self.config_entry.options.get(CONF_PDR_MYITALGAS), self._periodi_collegati(conti)
         )
         await statistiche.importa_consumi(self.hass, conti)
+        if self.client.sessione is not None:
+            await statistiche.importa_spese(self.hass, conti, self.client.sessione.uid)
         return DatiAccount(conti=conti, ultimo_aggiornamento=dt_util.utcnow())
 
     async def _completa(self, conto: Conto, precedente: Conto | None) -> None:

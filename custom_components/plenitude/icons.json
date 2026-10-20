@@ -59,6 +59,12 @@
       },
       "prezzo_energia": {
         "default": "mdi:currency-eur"
+      },
+      "spesa_ultimo_mese": {
+        "default": "mdi:calendar-month"
+      },
+      "spesa_totale_ultimo_mese": {
+        "default": "mdi:cash-register"
       }
     }
   }

@@ -315,6 +315,34 @@
             "name": "Quota fissa (€/mese)"
           }
         }
+      },
+      "spesa_ultimo_mese": {
+        "name": "Spesa ultimo mese",
+        "state_attributes": {
+          "mese": {
+            "name": "Mese"
+          },
+          "mesi": {
+            "name": "Spesa per mese"
+          },
+          "totale_12_mesi": {
+            "name": "Totale ultimi 12 mesi"
+          }
+        }
+      },
+      "spesa_totale_ultimo_mese": {
+        "name": "Spesa totale ultimo mese",
+        "state_attributes": {
+          "mese": {
+            "name": "Mese"
+          },
+          "mesi": {
+            "name": "Spesa per mese"
+          },
+          "totale_12_mesi": {
+            "name": "Totale ultimi 12 mesi"
+          }
+        }
       }
     }
   },

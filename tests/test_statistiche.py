@@ -10,7 +10,7 @@ from pytest_homeassistant_custom_component.components.recorder.common import (
 )
 
 from custom_components.plenitude import statistiche
-from custom_components.plenitude.account import ConsumoMese, Conto
+from custom_components.plenitude.account import BollettaConto, ConsumoMese, Conto
 from homeassistant.components.recorder import Recorder
 from homeassistant.components.recorder.statistics import (
     get_metadata,
@@ -151,3 +151,31 @@ async def test_dopo_un_riavvio(recorder_mock: Recorder, hass: HomeAssistant) -> 
         ("2026-03", 200),
         ("2026-04", 210),
     ]
+
+
+async def test_spese_mensili(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """La spesa di ogni mese diventa una statistica in euro, per conto e totale."""
+    from custom_components.plenitude.bollette import PeriodoTariffario
+
+    gas = _conto({(2026, 6): 12, (2026, 7): 8})
+    gas.bollette = [BollettaConto("1", date(2026, 8, 1), None, 63.32, 0.0, None, None)]
+    gas.periodi_bollette = {"1": (date(2026, 6, 1), date(2026, 7, 31))}
+    gas.periodi = [PeriodoTariffario(date(2026, m, 1), 1, 1, 1, 17.6) for m in (6, 7)]
+    await statistiche.importa_spese(hass, {"g": gas}, "UID123")
+    await async_wait_recording_done(hass)
+    for statistic_id in (statistiche.id_statistica_spesa(gas), "plenitude:spesa_totale_uid123"):
+        righe = await hass.async_add_executor_job(
+            statistics_during_period,
+            hass,
+            datetime(2000, 1, 1, tzinfo=UTC),
+            None,
+            {statistic_id},
+            "hour",
+            None,
+            {"sum"},
+        )
+        assert [r["sum"] for r in righe[statistic_id]][-1] == pytest.approx(63.32, abs=0.01)
+    metadati = await hass.async_add_executor_job(
+        lambda: get_metadata(hass, statistic_ids={statistiche.id_statistica_spesa(gas)})
+    )
+    assert metadati[statistiche.id_statistica_spesa(gas)][1]["unit_of_measurement"] == "EUR"
