@@ -26,8 +26,9 @@ git pull --ff-only --quiet
 
 # Un tag già pubblicato senza release (controlli falliti) può essere rifatto.
 if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-  REPO_URL=$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#; s#\.git$##')
-  if curl -fsS -o /dev/null "$REPO_URL/releases/tag/$TAG"; then
+  REPO=$(git remote get-url origin | sed -E 's#^(git@github.com:|https://github.com/)##; s#\.git$##')
+  # la pagina di un tag esiste anche senza release: si interroga l'API delle release
+  if curl -fsS -o /dev/null "https://api.github.com/repos/$REPO/releases/tags/$TAG"; then
     errore "la versione $TAG è già stata pubblicata"
   fi
   echo "Il tag $TAG esiste ma la release no: lo ricreo."
