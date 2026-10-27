@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .bollette import SOGLIE_SCAGLIONI, Bolletta, BollettaLuce, PeriodoTariffario
+
+if TYPE_CHECKING:
+    from .pannello import DatiPannello
 
 GAS = "gas"
 LUCE = "luce"
@@ -119,6 +122,10 @@ class Conto:
     bollette_luce: dict[str, BollettaLuce] = field(default_factory=dict)
     # lettura del contatore della luce per fascia (dall'ultima bolletta)
     letture_fasce: dict[str, int] = field(default_factory=dict)
+    # codice della fornitura di luce (serve per il servizio "Adotta un pannello")
+    codice_fornitura: str | None = None
+    # pannelli virtuali adottati e loro dati (None se la fornitura non ne ha)
+    pannello: DatiPannello | None = None
 
     @property
     def ultima_luce(self) -> BollettaLuce | None:
@@ -398,6 +405,7 @@ def aggiungi_fornitura(conto: Conto, forniture: list[dict[str, Any]]) -> None:
         fornitura.get("podPdr") if conto.commodity == LUCE else None
     )
     conto.matricola = fornitura.get("matricolaContatore")
+    conto.codice_fornitura = str(fornitura.get("assetCode") or "").strip() or None
     conto.prodotto = fornitura.get("prodotto")
     conto.tipologia_offerta = fornitura.get("tipologiaOfferta")
     conto.mercato = fornitura.get("tipoMercato")

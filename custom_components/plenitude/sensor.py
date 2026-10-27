@@ -24,6 +24,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .account import GAS, LUCE, Conto
 from .const import DOMAIN
@@ -33,6 +34,7 @@ from .coordinator import (
     PlenitudeConfigEntry,
     PlenitudeCoordinator,
 )
+from .pannello import DatiPannello, Riepilogo
 from .statistiche import spese_totali
 
 PARALLEL_UPDATES = 0
@@ -471,6 +473,135 @@ SENSORI_CONTO: tuple[ContoSensorDescription, ...] = (
 )
 
 
+# --- Adotta un pannello ------------------------------------------------------------------
+
+
+@dataclass(frozen=True, kw_only=True)
+class PannelloSensorDescription(SensorEntityDescription):
+    """Descrizione di un sensore dei pannelli virtuali di una fornitura di luce."""
+
+    valore: Callable[[DatiPannello], Valore]
+    attributi: Callable[[DatiPannello], dict[str, Any] | None] = lambda _: None
+
+
+def _fino_al(dati: DatiPannello) -> str | None:
+    """Fine (ora locale) dell'ultimo quarto d'ora con produzione e consumi."""
+    fine = dati.ultimo_completo
+    return dt_util.as_local(fine).isoformat() if fine else None
+
+
+def _attributi_energia(r: Riepilogo | None, dati: DatiPannello) -> dict[str, Any] | None:
+    if r is None:
+        return None
+    return {
+        "consumo": r.consumo,
+        "autoconsumo": r.autoconsumo,
+        "prelievo": r.prelievo,
+        "non_autoconsumata": r.immissione,
+        "quota_autoconsumata": r.quota_autoconsumata,
+        "copertura_consumi": r.copertura,
+        "dati_fino_al": _fino_al(dati),
+    }
+
+
+def _attributi_risparmio(r: Riepilogo | None, dati: DatiPannello) -> dict[str, Any] | None:
+    if r is None:
+        return None
+    return {
+        "autoconsumo": r.autoconsumo,
+        "canone": r.canone,
+        "netto": r.netto,
+        "prezzo_kwh": dati.prezzo,
+        "dati_fino_al": _fino_al(dati),
+    }
+
+
+def _attributi_pannelli(dati: DatiPannello) -> dict[str, Any]:
+    return {
+        "pannelli": [
+            {
+                "codice": p.codice,
+                "posizione": p.posizione,
+                "taglia": p.taglia,
+                "potenza_kw": p.potenza,
+                "canone_mensile": p.canone,
+            }
+            for p in dati.pannelli
+        ],
+        "potenza_nominale_kw": dati.potenza,
+        "attivo_dal": dt_util.as_local(dati.attivo_dal).isoformat() if dati.attivo_dal else None,
+    }
+
+
+_KWH = UnitOfEnergy.KILO_WATT_HOUR
+
+SENSORI_PANNELLO: tuple[PannelloSensorDescription, ...] = (
+    PannelloSensorDescription(
+        key="pannello_potenza",
+        translation_key="pannello_potenza",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_display_precision=0,
+        valore=lambda d: d.potenza_istantanea,
+        attributi=_attributi_pannelli,
+    ),
+    PannelloSensorDescription(
+        key="pannello_produzione_mese",
+        translation_key="pannello_produzione_mese",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=_KWH,
+        suggested_display_precision=2,
+        valore=lambda d: d.mese.produzione if d.mese else None,
+        attributi=lambda d: _attributi_energia(d.mese, d),
+    ),
+    PannelloSensorDescription(
+        key="pannello_autoconsumo_mese",
+        translation_key="pannello_autoconsumo_mese",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=_KWH,
+        suggested_display_precision=2,
+        valore=lambda d: d.mese.autoconsumo if d.mese else None,
+        attributi=lambda d: _attributi_energia(d.mese, d),
+    ),
+    PannelloSensorDescription(
+        key="pannello_risparmio_mese",
+        translation_key="pannello_risparmio_mese",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement=CURRENCY_EURO,
+        suggested_display_precision=2,
+        valore=lambda d: d.mese.risparmio if d.mese else None,
+        attributi=lambda d: _attributi_risparmio(d.mese, d),
+    ),
+    PannelloSensorDescription(
+        key="pannello_produzione_totale",
+        translation_key="pannello_produzione_totale",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=_KWH,
+        suggested_display_precision=2,
+        valore=lambda d: d.totale.produzione if d.totale else None,
+        attributi=lambda d: _attributi_energia(d.totale, d),
+    ),
+    PannelloSensorDescription(
+        key="pannello_risparmio_totale",
+        translation_key="pannello_risparmio_totale",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement=CURRENCY_EURO,
+        suggested_display_precision=2,
+        valore=lambda d: d.totale.risparmio if d.totale else None,
+        attributi=lambda d: _attributi_risparmio(d.totale, d),
+    ),
+    PannelloSensorDescription(
+        key="pannello_prezzo",
+        translation_key="pannello_prezzo",
+        native_unit_of_measurement=f"{CURRENCY_EURO}/{UnitOfEnergy.KILO_WATT_HOUR}",
+        suggested_display_precision=4,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        valore=lambda d: d.prezzo,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: PlenitudeConfigEntry,
@@ -490,19 +621,32 @@ async def async_setup_entry(
         ]
     )
     noti: set[str] = set()
+    con_pannello: set[str] = set()
 
     @callback
     def _aggiungi_conti() -> None:
         nuovi = [c for c in coordinator.data.conti.values() if c.codice not in noti]
-        if not nuovi:
-            return
         noti.update(c.codice for c in nuovi)
-        async_add_entities(
+        entita: list[SensorEntity] = [
             ContoSensor(coordinator, conto.codice, descrizione)
             for conto in nuovi
             for descrizione in SENSORI_CONTO
             if conto.commodity in descrizione.forniture
+        ]
+        # i sensori dei pannelli compaiono quando la fornitura ne adotta uno
+        pannelli = [
+            c
+            for c in coordinator.data.conti.values()
+            if c.pannello is not None and c.codice not in con_pannello
+        ]
+        con_pannello.update(c.codice for c in pannelli)
+        entita.extend(
+            PannelloSensor(coordinator, conto.codice, descrizione)
+            for conto in pannelli
+            for descrizione in SENSORI_PANNELLO
         )
+        if entita:
+            async_add_entities(entita)
 
     _aggiungi_conti()
     entry.async_on_unload(coordinator.async_add_listener(_aggiungi_conti))
@@ -686,3 +830,56 @@ def _nome_dispositivo(coordinator: PlenitudeAccountCoordinator, conto: Conto) ->
     if len(stessi) > 1:
         return f"{nome} {conto.codice}"
     return nome
+
+
+class PannelloSensor(CoordinatorEntity[PlenitudeAccountCoordinator], SensorEntity):
+    """Sensore dei pannelli virtuali ("Adotta un pannello") di una fornitura di luce."""
+
+    _attr_has_entity_name = True
+    entity_description: PannelloSensorDescription
+
+    def __init__(
+        self,
+        coordinator: PlenitudeAccountCoordinator,
+        codice: str,
+        descrizione: PannelloSensorDescription,
+    ) -> None:
+        """Inizializza il sensore, nel dispositivo della fornitura di luce."""
+        super().__init__(coordinator)
+        self._codice = codice
+        conto = coordinator.data.conti[codice]
+        self.entity_description = descrizione
+        self._attr_unique_id = f"{codice}_{descrizione.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, codice)},
+            name=_nome_dispositivo(coordinator, conto),
+            manufacturer="Eni Plenitude",
+            model=conto.prodotto,
+            serial_number=conto.matricola,
+        )
+
+    @property
+    def _conto(self) -> Conto | None:
+        return self.coordinator.data.conti.get(self._codice)
+
+    @property
+    def available(self) -> bool:
+        """Disponibile finché la fornitura ha un pannello."""
+        conto = self._conto
+        return super().available and conto is not None and conto.pannello is not None
+
+    @property
+    def native_value(self) -> Valore:
+        """Valore del sensore."""
+        conto = self._conto
+        if conto is None or conto.pannello is None:
+            return None
+        return self.entity_description.valore(conto.pannello)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Attributi aggiuntivi."""
+        conto = self._conto
+        if conto is None or conto.pannello is None:
+            return None
+        return self.entity_description.attributi(conto.pannello)

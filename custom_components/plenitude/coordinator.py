@@ -18,8 +18,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from . import account, bollette, pdf, statistiche
-from .account import GAS, Conto
+from . import account, bollette, pannello, pdf, statistiche
+from .account import GAS, LUCE, Conto
 from .api import (
     AccountBloccato,
     ClientPlenitude,
@@ -34,10 +34,14 @@ from .const import (
     CONF_CONTO_GAS,
     CONF_INTERVALLO_ORE,
     CONF_PDR_MYITALGAS,
+    CONF_PREZZO_PANNELLO,
     DOMAIN,
     INTERVALLO_ORE_DEFAULT,
+    INTERVALLO_QUARTI_MINUTI,
+    IVA_AGEVOLATA,
     MAX_BOLLETTE_PDF,
     MAX_BOLLETTE_PDF_LUCE,
+    MAX_GIORNI_PANNELLO,
     STORAGE_VERSION,
 )
 
@@ -162,6 +166,10 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
 
     I PDF delle bollette gas vengono scaricati in background in un archivio locale (una
     sottocartella per conto) e letti per ricavare i prezzi del gas per MyItalgas.
+
+    Per le forniture di luce con "Adotta un pannello" legge anche la produzione dei
+    pannelli e i consumi di ogni quarto d'ora; questi si aggiornano più spesso
+    (`async_aggiorna_pannelli`) e si conservano su disco dall'attivazione del pannello.
     """
 
     config_entry: PlenitudeConfigEntry
@@ -198,6 +206,15 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
         # un aggiornamento è in corso: i risultati del background li applica lui
         self._in_aggiornamento = False
         self._ricalcolo_pendente = False
+        # "Adotta un pannello": per conto, giorno di attivazione e quarti d'ora di ogni
+        # giorno (righe come le riporta l'area clienti), salvati su disco
+        self._memoria_pannelli: Store[dict[str, Any]] = Store(
+            hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}.pannelli"
+        )
+        self._pannelli: dict[str, dict[str, Any]] | None = None
+        self._lettura_quarti: dict[str, float] = {}
+        self._canoni: dict[str, float | None] = {}
+        self._lock_pannelli = asyncio.Lock()
 
     async def _async_update_data(self) -> DatiAccount:
         """Legge i dati dell'account."""
@@ -235,6 +252,7 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
                 conti[conto.codice] = conto
         # i conti si leggono in parallelo, come fa l'app
         await asyncio.gather(*(self._completa(c, precedenti.get(c.codice)) for c in conti.values()))
+        await self._leggi_pannelli(conti, precedenti, dettagli=True)
 
         if self._lette is None:
             self._lette = await self._carica_memoria()
@@ -303,6 +321,8 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
             if precedente:
                 conto.pdr, conto.pod = precedente.pdr, precedente.pod
                 conto.matricola, conto.prodotto = precedente.matricola, precedente.prodotto
+                conto.codice_fornitura = precedente.codice_fornitura
+                conto.condizioni_dal = precedente.condizioni_dal
         else:
             account.aggiungi_fornitura(conto, forniture)
         if isinstance(elenco_bollette, PlenitudeError):
@@ -335,6 +355,231 @@ class PlenitudeAccountCoordinator(DataUpdateCoordinator[DatiAccount]):
             await statistiche.importa_consumi(self.hass, conti)
         if self.client.sessione is not None:
             await statistiche.importa_spese(self.hass, conti, self.client.sessione.uid)
+        # il valore dell'autoconsumo dipende dalle bollette lette: si ricalcola anche qui
+        await self._derivati_pannelli(conti)
+
+    async def _derivati_pannelli(self, conti: dict[str, Conto]) -> None:
+        """Totali e statistiche dei pannelli, mai mentre i loro dati si stanno leggendo."""
+        async with self._lock_pannelli:
+            adesso = dt_util.utcnow()
+            for conto in conti.values():
+                if conto.pannello is not None:
+                    pannello.aggiorna_riepiloghi(
+                        conto.pannello,
+                        pannello.prezzo_pannello(conto, self.prezzo_pannello),
+                        IVA_AGEVOLATA,
+                        adesso,
+                    )
+            await statistiche.importa_pannello(self.hass, conti, self.prezzo_pannello)
+
+    @property
+    def prezzo_pannello(self) -> float | None:
+        """Corrispettivo Luce indicato nelle opzioni per i periodi non ancora fatturati."""
+        valore = self.config_entry.options.get(CONF_PREZZO_PANNELLO)
+        return float(valore) if valore else None
+
+    async def async_aggiorna_pannelli(self, _ora: datetime | None = None) -> None:
+        """Produzione istantanea e quarti d'ora dei pannelli, fra un aggiornamento e l'altro."""
+        if self.data is None or self._in_aggiornamento:
+            return
+        conti = self.data.conti
+        if not any(c.pannello is not None for c in conti.values()):
+            return
+        await self._leggi_pannelli(conti, conti, dettagli=False)
+        await self._derivati_pannelli(conti)
+        # senza async_set_updated_data, che sposterebbe il prossimo aggiornamento completo
+        self.async_update_listeners()
+
+    async def _leggi_pannelli(
+        self, conti: dict[str, Conto], precedenti: dict[str, Conto], *, dettagli: bool
+    ) -> None:
+        """Pannelli virtuali delle forniture di luce e loro dati.
+
+        Con `dettagli` si rileggono anche i pannelli adottati (e si scopre se una
+        fornitura ne ha di nuovi); altrimenti solo produzione e quarti d'ora.
+        """
+        async with self._lock_pannelli:
+            if self._pannelli is None:
+                dati = await self._memoria_pannelli.async_load() or {}
+                self._pannelli = dati.get("conti") or {}
+            luce = [c for c in conti.values() if c.commodity == LUCE]
+            risultati = await asyncio.gather(
+                *(self._leggi_pannello(c, precedenti.get(c.codice), dettagli) for c in luce),
+                return_exceptions=True,
+            )
+            # quanto letto si salva anche se un altro conto è andato in errore
+            if any(r is True for r in risultati):
+                await self._memoria_pannelli.async_save({"conti": self._pannelli})
+            for risultato in risultati:
+                if isinstance(risultato, BaseException):
+                    raise risultato
+
+    async def _leggi_pannello(self, conto: Conto, precedente: Conto | None, dettagli: bool) -> bool:
+        """Pannelli, produzione istantanea e quarti d'ora di un conto. Ritorna se ha letto
+        quarti d'ora nuovi.
+
+        Un errore dell'area clienti lascia i dati precedenti: il servizio dei pannelli è
+        indipendente dal resto dell'account. I dati nuovi si preparano a parte e si
+        pubblicano nel conto solo alla fine.
+        """
+        vecchio = precedente.pannello if precedente else None
+        conto.pannello = vecchio
+        if not conto.codice_fornitura or not conto.pod or (not dettagli and vecchio is None):
+            return False
+        nel_log = oscura(conto.codice)
+        if dettagli or vecchio is None:
+            try:
+                risposta = await self.client.pannelli(conto.codice, conto.codice_fornitura)
+                pannelli = [
+                    replace(p, canone=await self._canone(p.codice))
+                    for p in pannello.pannelli_da(risposta)
+                ]
+            except PlenitudeError as err:
+                _LOGGER.debug("Pannelli del conto %s non letti: %s", nel_log, err)
+                return False
+        else:
+            pannelli = vecchio.pannelli
+        if not pannelli:
+            conto.pannello = None
+            return False
+        dati = pannello.DatiPannello(
+            pannelli=pannelli,
+            potenza_istantanea=vecchio.potenza_istantanea if vecchio else None,
+            attivo_dal=vecchio.attivo_dal if vecchio else None,
+            quarti=vecchio.quarti if vecchio else {},
+        )
+        try:
+            dati.potenza_istantanea = pannello.potenza_da(
+                await self.client.produzione_istantanea(
+                    conto.codice,
+                    conto.codice_fornitura,
+                    [
+                        {
+                            "identifier": p.codice,
+                            "position": p.posizione,
+                            "power": f"{p.potenza:g}" if p.potenza is not None else None,
+                        }
+                        for p in pannelli
+                    ],
+                )
+            )
+        except PlenitudeError as err:
+            # meglio nessun valore che l'ultimo letto spacciato per attuale
+            dati.potenza_istantanea = None
+            _LOGGER.debug("Produzione istantanea del conto %s non letta: %s", nel_log, err)
+        letti = await self._leggi_quarti(conto, dati, forza=dettagli)
+        conto.pannello = dati
+        return letti
+
+    async def _canone(self, codice: str) -> float | None:
+        """Canone mensile di un pannello, dal catalogo (letto finché non si trova)."""
+        if codice not in self._canoni:
+            try:
+                canone = pannello.canone_da(await self.client.prodotto(codice), codice)
+            except PlenitudeError as err:
+                _LOGGER.debug("Canone del pannello %s non letto: %s", codice, err)
+                return None
+            if canone is None:
+                _LOGGER.debug("Canone del pannello %s non presente nel catalogo", codice)
+                return None
+            self._canoni[codice] = canone
+        return self._canoni[codice]
+
+    async def _leggi_quarti(self, conto: Conto, dati: pannello.DatiPannello, forza: bool) -> bool:
+        """Quarti d'ora dall'attivazione: si chiedono solo i giorni nuovi o incompleti."""
+        assert self._pannelli is not None
+        salvati = self._pannelli.setdefault(conto.codice, {})
+        giorni: dict[str, list[list[Any]]] = salvati.setdefault("giorni", {})
+        adesso = time.monotonic()
+        letti = False
+        if forza or adesso - self._lettura_quarti.get(conto.codice, -1e9) >= (
+            INTERVALLO_QUARTI_MINUTI * 60
+        ):
+            letti, riuscita = await self._scarica_quarti(conto, dati, salvati, giorni)
+            if riuscita:  # dopo un errore si riprova al giro successivo
+                self._lettura_quarti[conto.codice] = adesso
+        if letti or not dati.quarti:
+            nuovi = pannello.DatiPannello()
+            pannello.unisci(
+                nuovi, (q for righe in giorni.values() for q in pannello.quarti_da_righe(righe))
+            )
+            dati.quarti, dati.attivo_dal = nuovi.quarti, nuovi.attivo_dal
+        return letti
+
+    async def _scarica_quarti(
+        self,
+        conto: Conto,
+        dati: pannello.DatiPannello,
+        salvati: dict[str, Any],
+        giorni: dict[str, list[list[Any]]],
+    ) -> tuple[bool, bool]:
+        """Legge i giorni da aggiornare. Ritorna se ha letto dati e se non ci sono stati errori."""
+        assert conto.pod
+        nel_log = oscura(conto.codice)
+        try:
+            if not salvati.get("inizio"):
+                inizio = await self._cerca_attivazione(conto)
+                if inizio is None:
+                    _LOGGER.debug("Il pannello del conto %s non ha ancora prodotto", nel_log)
+                    return False, True
+                salvati["inizio"] = inizio.isoformat()
+        except PlenitudeError as err:
+            _LOGGER.debug("Attivazione del pannello del conto %s non letta: %s", nel_log, err)
+            return False, False
+        da_leggere = pannello.giorni_da_leggere(
+            giorni,
+            date.fromisoformat(salvati["inizio"]),
+            dt_util.utcnow(),
+            MAX_GIORNI_PANNELLO,
+            dati.attivo_dal,
+        )
+        limite = asyncio.Semaphore(4)
+
+        async def leggi(giorno: date) -> tuple[date, Any]:
+            async with limite:
+                return giorno, await self.client.produzioni_consumi(
+                    conto.codice, conto.pod or "", "QUARTER_HOURS", giorno
+                )
+
+        letti, riuscita = False, True
+        for risultato in await asyncio.gather(
+            *(leggi(g) for g in da_leggere), return_exceptions=True
+        ):
+            if isinstance(risultato, PlenitudeError):
+                _LOGGER.debug("Quarti d'ora del conto %s non letti: %s", nel_log, risultato)
+                riuscita = False
+                continue
+            if isinstance(risultato, BaseException):
+                raise risultato
+            giorno, risposta = risultato
+            if righe := pannello.righe_giorno(risposta):
+                giorni[giorno.isoformat()] = righe
+                letti = True
+        return letti, riuscita
+
+    async def _cerca_attivazione(self, conto: Conto) -> date | None:
+        """Primo giorno in cui il pannello ha prodotto (dai totali annui e mensili)."""
+        assert conto.pod
+        oggi = pannello.giorno_locale(dt_util.utcnow())
+        primo_mese: date | None = None
+        for anno in range(oggi.year, oggi.year - pannello.ANNI_RICERCA, -1):
+            risposta = await self.client.produzioni_consumi(
+                conto.codice, conto.pod, "YEARLY", date(anno, 1, 1)
+            )
+            mese = pannello.primo_periodo_con_produzione(risposta)
+            if mese is None:
+                if anno == oggi.year:
+                    continue  # inizio d'anno: il pannello può essere attivo dall'anno prima
+                break
+            primo_mese = mese
+            if mese.month != 1:
+                break
+        if primo_mese is None:
+            return None
+        risposta = await self.client.produzioni_consumi(
+            conto.codice, conto.pod, "MONTHLY", primo_mese
+        )
+        return pannello.primo_periodo_con_produzione(risposta) or primo_mese
 
     async def async_scarica_bollette(self) -> bool:
         """Rilegge l'account e scarica subito le bollette mancanti, attendendo la fine.

@@ -16,7 +16,7 @@ from .const import IVA_AGEVOLATA, IVA_ORDINARIA
 
 # Versione della lettura dei PDF: va incrementata quando cambia `analizza`, così le
 # bollette già lette e salvate nella cache vengono rilette.
-VERSIONE_LETTURA = 7
+VERSIONE_LETTURA = 8
 
 # Scaglioni annui di consumo (Smc dal 1° gennaio): fino a 120, 121-480, oltre 480.
 SOGLIE_SCAGLIONI: tuple[float, float] = (120.0, 480.0)
@@ -388,6 +388,10 @@ class BollettaLuce:
     # spread ("contributo al consumo") e dispacciamento dell'ultimo mese, €/kWh
     contributo: float | None = None
     dispacciamento: float | None = None
+    # Corrispettivo Luce di ogni periodo, perdite di rete incluse e al netto degli sconti
+    # sul corrispettivo, IVA esclusa: (dal, al, €/kWh). È il valore dell'energia
+    # autoconsumata con "Adotta un pannello".
+    corrispettivi: list[tuple[date, date, float]] = field(default_factory=list)
 
     @property
     def prezzo_energia(self) -> float | None:
@@ -469,6 +473,7 @@ def analizza_luce(testo: str) -> BollettaLuce | None:
             b.contributo = v.prezzo
         elif v.ruolo == "dispacciamento":
             b.dispacciamento = v.prezzo
+    b.corrispettivi = _corrispettivi_luce(testo)
     letture = [
         (d, m) for m in _RE_LETTURA_LUCE.finditer(testo) if (d := _data_o_none(m[1])) is not None
     ]
@@ -479,12 +484,56 @@ def analizza_luce(testo: str) -> BollettaLuce | None:
     return b
 
 
+def _corrispettivi_luce(testo: str) -> list[tuple[date, date, float]]:
+    """Corrispettivo Luce effettivo di ogni periodo, dalle righe di dettaglio della vendita.
+
+    Si sommano gli importi del corrispettivo, delle perdite di rete sul corrispettivo e
+    degli sconti a consumo (€/kWh) e si dividono per i kWh consumati: è quanto si paga
+    per ogni kWh di Corrispettivo Luce, comprese le perdite e al netto degli sconti.
+    """
+    importi: dict[tuple[date, date], list[float]] = {}  # periodo -> [kWh, €]
+    tipo: str | None = None
+    for riga in testo.splitlines():
+        intestazione = riga.strip()
+        if m := _RE_INTESTAZIONE.fullmatch(intestazione):
+            etichetta = re.sub(r"\s*\(\d+\)$", "", m.group(1)).strip()
+            if etichetta.startswith("Corrispettivo Luce"):
+                tipo = "corrispettivo"
+            elif etichetta.startswith("Perdite su Corrispettivo Luce"):
+                tipo = "perdite"
+            elif etichetta.startswith("Sconto"):
+                tipo = "sconto"
+            else:
+                tipo = None
+            continue
+        if intestazione.startswith(("Totale", "Spesa per", "Riepilogo")):
+            tipo = None
+            continue
+        m = _RE_DETTAGLIO.search(riga)
+        if m is None or tipo is None:
+            continue
+        dal, al = _data_o_none(m[1]), _data_o_none(m[2])
+        numeri = m[5].split()
+        if dal is None or al is None or m[3] != "€/kWh" or len(numeri) != 2:
+            continue
+        voce = importi.setdefault((dal, al), [0.0, 0.0])
+        if tipo == "corrispettivo":
+            voce[0] += _numero(numeri[0])
+        voce[1] += _numero(numeri[1])
+    return [
+        (dal, al, round(euro / kwh, 6))
+        for (dal, al), (kwh, euro) in sorted(importi.items())
+        if kwh > 0
+    ]
+
+
 def bolletta_luce_a_dict(b: BollettaLuce) -> dict[str, Any]:
     """Bolletta luce in forma serializzabile (per la cache delle bollette già lette)."""
     dati = {nome: getattr(b, nome) for nome in BollettaLuce.__slots__}
     for nome in ("dal", "al", "emissione", "scadenza", "data_lettura"):
         dati[nome] = dati[nome].isoformat() if dati[nome] else None
     dati["indici"] = {mese.isoformat(): valore for mese, valore in b.indici.items()}
+    dati["corrispettivi"] = [[dal.isoformat(), al.isoformat(), v] for dal, al, v in b.corrispettivi]
     return dati
 
 
@@ -499,6 +548,10 @@ def bolletta_luce_da_dict(dati: dict[str, Any]) -> BollettaLuce:
     valori["indici"] = {
         date.fromisoformat(mese): float(valore) for mese, valore in (valori["indici"] or {}).items()
     }
+    valori["corrispettivi"] = [
+        (date.fromisoformat(dal), date.fromisoformat(al), float(v))
+        for dal, al, v in valori["corrispettivi"] or []
+    ]
     return BollettaLuce(**valori)
 
 

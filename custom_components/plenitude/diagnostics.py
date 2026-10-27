@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
@@ -81,6 +82,27 @@ def _conto(indice: int, conto: Conto) -> dict[str, Any]:
         "data_lettura": conto.data_lettura.isoformat() if conto.data_lettura else None,
         "bollette_pdf": _bollette_pdf(conto.bollette_pdf),
         "periodi_tariffari": _periodi(conto.periodi),
+        "pannello": _pannello(conto),
+    }
+
+
+def _pannello(conto: Conto) -> dict[str, Any] | None:
+    """Pannelli virtuali e copertura dei dati, senza i valori dei singoli quarti d'ora."""
+    dati = conto.pannello
+    if dati is None:
+        return None
+    return {
+        "pannelli": [
+            {"taglia": p.taglia, "potenza": p.potenza, "stato": p.stato, "canone": p.canone}
+            for p in dati.pannelli
+        ],
+        "attivo_dal": dati.attivo_dal.isoformat() if dati.attivo_dal else None,
+        "quarti_d_ora": len(dati.quarti),
+        "ultima_produzione": dati.ultima_produzione.isoformat() if dati.ultima_produzione else None,
+        "ultimo_completo": dati.ultimo_completo.isoformat() if dati.ultimo_completo else None,
+        "prezzo": dati.prezzo,
+        "mese": asdict(dati.mese) if dati.mese else None,
+        "totale": asdict(dati.totale) if dati.totale else None,
     }
 
 

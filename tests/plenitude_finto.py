@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import asyncio
 import copy
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
+import math
 from pathlib import Path
 import re
 from typing import Any
@@ -85,6 +87,7 @@ FORNITURE: dict[str, list[dict[str, Any]]] = {
             "podPdr": "IT001E00000001",
             "pdr": None,
             "pod": "IT001E00000001",
+            "assetCode": "1-PROVA01",
             "matricolaContatore": "MAT0000000002",
             "prodotto": "Offerta Luce di prova",
             "status": "ATTIVO",
@@ -197,6 +200,104 @@ AUTOLETTURE: dict[str, dict[str, Any]] = {
 }
 
 
+# "Adotta un pannello": pannello attivo dalle 00:15 del 24/10/2026 (ora italiana). I consumi
+# del contatore arrivano fino alle 02:45 del 25/10, la produzione fino alle 02:45 del 27/10.
+PANNELLO = {
+    "identifier": "SKU_PROVA_PAY_L",
+    "position": "Impianto di prova (ES)",
+    "locationId": "PROVA",
+    "size": "L",
+    "power": "0.9",
+    "state": "ATTIVO",
+    "terminationDate": "2099-12-31",
+}
+ATTIVAZIONE = datetime(2026, 10, 24, 0, 15)
+FINE_CONSUMI = datetime(2026, 10, 25, 3, 0)
+FINE_PRODUZIONE = datetime(2026, 10, 27, 3, 0)
+CONSUMO_QUARTO_WH = 60.0
+CATALOGO_PANNELLI = {
+    "body": {
+        "name": "Virtual Panel",
+        "virtualPanel": {
+            "locations": [
+                {
+                    "location": "Prova",
+                    "sizes": [
+                        {"productId": "SKU_PROVA_PAY_S", "size": "S", "price": "2.00"},
+                        {"productId": "SKU_PROVA_PAY_L", "size": "L", "price": "5.00"},
+                    ],
+                }
+            ]
+        },
+    },
+    "statusCodeValue": 200,
+}
+
+
+def produzione_quarto(ora: datetime) -> float:
+    """Wh prodotti dal pannello di prova nel quarto d'ora che inizia all'ora indicata."""
+    minuti = ora.hour * 60 + ora.minute
+    if not 7 * 60 + 15 <= minuti <= 18 * 60:
+        return 0.0
+    return round(150 * math.sin(math.pi * (minuti - 435) / 645), 2)
+
+
+def _wh(valore: float | None) -> str | None:
+    return None if valore is None else f"{valore:.2f}".replace(".", ",")
+
+
+def quarti_giorno(giorno: date) -> list[dict[str, Any]]:
+    """Quarti d'ora di un giorno come li riporta l'area clienti (96, ora locale)."""
+    voci = []
+    for i in range(96):
+        ora = datetime(giorno.year, giorno.month, giorno.day) + timedelta(minutes=15 * i)
+        prodotta = produzione_quarto(ora) if ATTIVAZIONE <= ora < FINE_PRODUZIONE else None
+        consumata = CONSUMO_QUARTO_WH if ora < FINE_CONSUMI else None
+        voci.append(
+            {
+                "energyProduced": _wh(prodotta),
+                "energyConsumed": _wh(consumata),
+                "timeUnit": ora.isoformat(),
+            }
+        )
+    return voci
+
+
+def _somma(voci: list[dict[str, Any]], campo: str) -> str | None:
+    valori = [float(v[campo].replace(",", ".")) for v in voci if v[campo] is not None]
+    return _wh(sum(valori) / 1000) if valori else None
+
+
+def produzioni_consumi(granularita: str, giorno: date) -> dict[str, Any]:
+    """Risposta dell'area clienti per la granularità e il giorno indicati."""
+    if granularita == "QUARTER_HOURS":
+        return {"measureUnit": "Wh", "energyProducedConsumed": quarti_giorno(giorno)}
+    voci = []
+    if granularita == "MONTHLY":
+        corrente = date(giorno.year, giorno.month, 1)
+        while corrente.month == giorno.month:
+            quarti = quarti_giorno(corrente)
+            voci.append(
+                {
+                    "energyProduced": _somma(quarti, "energyProduced"),
+                    "energyConsumed": _somma(quarti, "energyConsumed"),
+                    "timeUnit": f"{corrente.isoformat()}T00:00:00",
+                }
+            )
+            corrente += timedelta(days=1)
+    else:  # YEARLY
+        for mese in range(1, 13):
+            prodotto = giorno.year == 2026 and mese == 10
+            voci.append(
+                {
+                    "energyProduced": "13,24" if prodotto else None,
+                    "energyConsumed": "150,00",
+                    "timeUnit": f"{giorno.year}-{mese:02d}-01T00:00:00",
+                }
+            )
+    return {"measureUnit": "KWh", "energyProducedConsumed": voci}
+
+
 def _gigya(dati: dict[str, Any], codice: int = 0, **extra: Any) -> dict[str, Any]:
     return {"errorCode": codice, "statusCode": 200 if not codice else 403, **dati, **extra}
 
@@ -236,6 +337,9 @@ class FintoPlenitude:
             {"date": "2026-05-01", "description": "Comunicazione letta", "read": True},
         ]
         self.errori: dict[str, HTTPStatus] = {}
+        self.pannelli: list[dict[str, Any]] = [copy.deepcopy(PANNELLO)]
+        self.potenza_istantanea = 577.58
+        self.richieste_pannelli: list[str] = []
         self.pdf_scaricati: list[str] = []
         self.parametri_gigya: dict[str, dict[str, Any]] = {}
         aioclient_mock.post(re.compile(re.escape(GIGYA) + r"/.*"), side_effect=self._gigya)
@@ -323,6 +427,11 @@ class FintoPlenitude:
             )
         if intestazioni.get("gysession") in self.token_revocati:
             return self._risposta(method, url, status=HTTPStatus.UNAUTHORIZED, text="")
+        # come il portale vero: fuori da /api/c360 vale solo il cookie GYSESSION
+        if not percorso.startswith("/api/c360/") and (
+            intestazioni.get("Cookie") != f"GYSESSION={intestazioni.get('gysession')}"
+        ):
+            return self._risposta(method, url, status=HTTPStatus.UNAUTHORIZED, text="")
         if self.token_rifiutati:
             self.token_rifiutati -= 1
             return self._risposta(method, url, status=HTTPStatus.UNAUTHORIZED, text="")
@@ -344,6 +453,12 @@ class FintoPlenitude:
             return self._risposta(method, url, json={"supplies": self.consumi.get(conto, [])})
         if m := re.fullmatch(r"/api/autoletture/(\d+)/autoletture", percorso):
             return self._risposta(method, url, json=self.autoletture.get(m[1]))
+        if m := re.fullmatch(r"/api/pannelli-services/v1/accounts/(\d+)/(.+)", percorso):
+            return self._pannelli(method, url, m[1], m[2], data)
+        if m := re.fullmatch(r"/api/productsServices/v1\.2/a1p/sku/(\w+)", percorso):
+            if not intestazioni.get("loghash"):  # come il portale vero
+                return self._risposta(method, url, status=HTTPStatus.BAD_REQUEST, text="")
+            return self._risposta(method, url, json=CATALOGO_PANNELLI)
         if m := re.fullmatch(r"/c360/api/conti/(\d+)/download-doc-pdf", percorso):
             numero = url.query.get("numeroFattura", "")
             if self.errori_temporanei_pdf:
@@ -359,4 +474,33 @@ class FintoPlenitude:
             self.pdf_scaricati.append(numero)
             testo = (FIXTURES / PDF_GAS[numero]).read_bytes()
             return self._risposta(method, url, response=b"%PDF-1.7\n" + testo)
+        return self._risposta(method, url, status=HTTPStatus.NOT_FOUND, text="")
+
+    def _pannelli(
+        self, method: str, url: URL, conto: str, resto: str, data: Any
+    ) -> AiohttpClientMockResponse:
+        self.richieste_pannelli.append(f"{resto} {url.query.get('granularity', '')}".strip())
+        if conto != CONTO_LUCE:
+            return self._risposta(method, url, status=HTTPStatus.INTERNAL_SERVER_ERROR, text="")
+        if resto == "supply/1-PROVA01/details":
+            return self._risposta(method, url, json={"panels": self.pannelli, "case48Hours": False})
+        if resto == "supply/1-PROVA01/instant-production":
+            return self._risposta(
+                method,
+                url,
+                json=[
+                    {
+                        "identifier": p["identifier"],
+                        "instantProductionWh": self.potenza_istantanea,
+                        "position": p["position"],
+                        "irradiance": None,
+                    }
+                    for p in data or []
+                ],
+            )
+        if resto == "pod/IT001E00000001/productions-consumes":
+            giorno = date.fromisoformat(url.query["start-date"][:10])
+            return self._risposta(
+                method, url, json=produzioni_consumi(url.query["granularity"], giorno)
+            )
         return self._risposta(method, url, status=HTTPStatus.NOT_FOUND, text="")

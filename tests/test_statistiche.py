@@ -202,3 +202,62 @@ async def test_mese_tolto_non_fa_scendere(recorder_mock: Recorder, hass: HomeAss
     await statistiche.importa_consumi(hass, {"g": _conto(valori)})
     somme = [s for _, s in await _somme(hass)]
     assert all(b >= a for a, b in itertools.pairwise(somme))
+
+
+def _conto_pannello(quarti: list[tuple[str, float | None, float | None]]) -> Conto:
+    """Conto luce con un pannello e i quarti d'ora indicati (ora italiana, Wh)."""
+    from custom_components.plenitude import pannello
+
+    conto = Conto(codice="500000000002", commodity="luce")
+    conto.pannello = pannello.DatiPannello()
+    pannello.unisci(conto.pannello, pannello.quarti_da_righe([[o, p, c] for o, p, c in quarti]))
+    return conto
+
+
+async def _somme_orarie(hass: HomeAssistant, statistic_id: str) -> list[tuple[str, float]]:
+    await async_wait_recording_done(hass)
+    righe = await hass.async_add_executor_job(
+        statistics_during_period,
+        hass,
+        datetime(2000, 1, 1, tzinfo=UTC),
+        None,
+        {statistic_id},
+        "hour",
+        None,
+        {"sum"},
+    )
+    return [
+        (datetime.fromtimestamp(r["start"], UTC).strftime("%d %H"), round(r["sum"], 4))
+        for r in righe.get(statistic_id, [])
+    ]
+
+
+async def test_pannello_orario(recorder_mock: Recorder, hass: HomeAssistant) -> None:
+    """Statistiche orarie dall'attivazione; i consumi arrivati dopo si aggiungono."""
+    produzione = "plenitude:pannello_produzione_500000000002"
+    autoconsumo = "plenitude:pannello_autoconsumo_500000000002"
+    prelievo = "plenitude:pannello_prelievo_500000000002"
+    risparmio = "plenitude:pannello_risparmio_500000000002"
+    # 12:00 e 13:00 del 24/10 in Italia = 10 e 11 UTC; consumi solo per la prima ora
+    quarti = [
+        ("2026-10-24T11:45:00", None, 100.0),  # prima dell'attivazione
+        *((f"2026-10-24T12:{m:02d}:00", 200.0, 100.0) for m in (0, 15, 30, 45)),
+        *((f"2026-10-24T13:{m:02d}:00", 100.0, None) for m in (0, 15, 30, 45)),
+    ]
+    conto = _conto_pannello(quarti)
+    await statistiche.importa_pannello(hass, {"l": conto}, 0.2)
+    assert await _somme_orarie(hass, produzione) == [("24 10", 0.8), ("24 11", 1.2)]
+    assert await _somme_orarie(hass, autoconsumo) == [("24 10", 0.4)]
+    assert await _somme_orarie(hass, prelievo) == [("24 10", 0.0)]
+    assert await _somme_orarie(hass, risparmio) == [("24 10", round(0.4 * 0.2 * 1.1, 4))]
+    metadati = await hass.async_add_executor_job(
+        lambda: get_metadata(hass, statistic_ids={produzione, risparmio})
+    )
+    assert metadati[produzione][1]["unit_of_measurement"] == "kWh"
+    assert metadati[risparmio][1]["unit_of_measurement"] == "EUR"
+
+    # arrivano i consumi delle 13: l'ora si aggiunge, la precedente resta
+    quarti[5:] = [(f"2026-10-24T13:{m:02d}:00", 100.0, 150.0) for m in (0, 15, 30, 45)]
+    await statistiche.importa_pannello(hass, {"l": _conto_pannello(quarti)}, 0.2)
+    assert await _somme_orarie(hass, autoconsumo) == [("24 10", 0.4), ("24 11", 0.8)]
+    assert await _somme_orarie(hass, prelievo) == [("24 10", 0.0), ("24 11", 0.2)]

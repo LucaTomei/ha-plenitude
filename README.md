@@ -76,6 +76,18 @@
       Home Assistant ti chiede di <b>riautenticarti</b>.
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>☀️ Adotta un pannello</h3>
+      Produzione del pannello virtuale, <b>autoconsumo virtuale</b> quarto d'ora per quarto
+      d'ora e <b>risparmio</b> in bolletta, dall'attivazione del pannello.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔆 Pannello Energia orario</h3>
+      Con il pannello: produzione, prelievo dalla rete ed energia non autoconsumata
+      <b>ora per ora</b>, come un impianto fotovoltaico vero.
+    </td>
+  </tr>
 </table>
 
 ```mermaid
@@ -101,6 +113,7 @@ flowchart LR
 - [Configurazione](#%EF%B8%8F-configurazione)
 - [Entità](#-entità)
 - [Pannello Energia](#-pannello-energia)
+- [Adotta un pannello](#%EF%B8%8F-adotta-un-pannello)
 - [Collegamento con MyItalgas](#-collegamento-con-myitalgas)
 - [Bollette da cartella](#-bollette-da-cartella)
 - [Come funziona l'accesso](#-come-funziona-laccesso)
@@ -159,6 +172,7 @@ Le opzioni si cambiano in seguito da **Configura**:
 | Intervallo di aggiornamento | Ogni quante ore aggiornare i dati (1–168, predefinito 12). |
 | Fornitura gas MyItalgas | Facoltativa: la fornitura MyItalgas a cui inviare i prezzi del gas. |
 | Conto gas collegato a MyItalgas | Compare solo se l'account ha più forniture gas. |
+| Corrispettivo Luce per il pannello virtuale | Facoltativo, solo con *Adotta un pannello*: vedi [Valore dell'energia autoconsumata](#-valore-dellenergia-autoconsumata). |
 | Cartella delle bollette | Solo per le bollette da cartella. |
 
 ## 📊 Entità
@@ -193,6 +207,7 @@ Con l'account trovi un dispositivo **Plenitude** per l'account e uno per ogni fo
 | Scadenze (calendario) | | | Sul dispositivo dell'account: scadenze delle bollette con l'importo, finestra dell'autolettura del gas e date delle comunicazioni |
 | Ultimo aggiornamento | | | Diagnostica, sul dispositivo dell'account: ultima lettura riuscita |
 | Scarica le bollette | | | Pulsante, sul dispositivo dell'account: rilegge subito l'account e scarica le bollette mancanti |
+| Pannello: … | ✅ | | Solo con *Adotta un pannello*: vedi [Adotta un pannello](#%EF%B8%8F-adotta-un-pannello) |
 
 <details>
 <summary><b>Esempio di automazione: avviso per una bolletta da pagare</b></summary>
@@ -303,6 +318,84 @@ Nella configurazione di ogni sorgente scegli **"Utilizza un'entità con il prezz
 > Se hai MyItalgas, i suoi consumi giornalieri sono più precisi: in quel caso usa
 > MyItalgas per il gas e Plenitude per i prezzi.
 
+## ☀️ Adotta un pannello
+
+Se sulla fornitura di luce hai attivato **Adotta un pannello**, l'integrazione legge
+dall'area clienti la produzione del pannello e i consumi del contatore 2G **quarto d'ora
+per quarto d'ora**, e calcola l'energia che "rientra in casa" e quanto ti fa risparmiare,
+con le regole delle condizioni economiche del servizio:
+
+- **Autoconsumo virtuale**: in ogni quarto d'ora, l'energia consumata mentre il pannello
+  produce, fino alla sua produzione (il minimo tra consumo e produzione). La produzione
+  in eccesso e i consumi quando il pannello non produce non danno sconti.
+- **Risparmio**: su quei kWh il *Corrispettivo Luce* (perdite di rete comprese, al netto
+  degli sconti dell'offerta) è azzerato. Il risparmio è kWh autoconsumati × Corrispettivo
+  Luce, con l'IVA al 10%.
+- **Canone**: il canone mensile del pannello (dalla taglia: ad esempio 5 €/mese per il
+  Large) più IVA, contato giorno per giorno. *Risparmio − canone* è il **risparmio netto**.
+
+Tutto parte dal **primo quarto d'ora in cui il pannello ha prodotto**: i giorni prima
+dell'attivazione, quando il pannello non c'era, non contano. Lo storico dall'attivazione
+viene recuperato da solo e conservato su disco.
+
+| Entità (dispositivo Plenitude Luce) | Descrizione |
+|---|---|
+| Potenza pannello | W prodotti in questo momento (aggiornata ogni 15 minuti); negli attributi i pannelli, la potenza nominale e la data di attivazione |
+| Produzione pannello del mese | kWh prodotti nel mese; negli attributi consumo, autoconsumo, prelievo dalla rete, produzione non autoconsumata, % autoconsumata e % dei consumi coperta |
+| Autoconsumo pannello del mese | kWh autoconsumati nel mese, con gli stessi attributi |
+| Risparmio pannello del mese | € risparmiati nel mese (IVA inclusa); negli attributi canone, risparmio netto e valore di un kWh |
+| Produzione pannello totale | kWh prodotti dall'attivazione |
+| Risparmio pannello totale | € risparmiati dall'attivazione, con canone e netto |
+| Valore energia autoconsumata | Diagnostica: Corrispettivo Luce usato oggi (€/kWh, IVA esclusa) |
+
+> [!NOTE]
+> La produzione arriva a blocchi durante la giornata, i consumi del contatore di solito il
+> giorno dopo: autoconsumo e risparmio arrivano fino all'ultimo quarto d'ora con entrambi
+> i dati (attributo *Dati fino al*). I giorni recenti si rileggono ogni ora, così i dati
+> arrivati in ritardo o rettificati entrano da soli.
+
+### 🔆 Pannello Energia con il pannello virtuale
+
+Sono importate statistiche **orarie** dall'attivazione del pannello:
+
+| Statistica | Unità | Dove aggiungerla |
+|---|:---:|---|
+| `plenitude:pannello_prelievo_<conto>` | kWh | **Rete elettrica → Consumo dalla rete** |
+| `plenitude:pannello_immissione_<conto>` | kWh | **Rete elettrica → Ritorno alla rete** (compenso: nessuno) |
+| `plenitude:pannello_produzione_<conto>` | kWh | **Pannelli solari → Produzione solare** |
+| `plenitude:pannello_autoconsumo_<conto>` | kWh | Facoltativa, per i grafici: energia autoconsumata |
+| `plenitude:pannello_risparmio_<conto>` | € | Facoltativa, per i grafici: risparmio ora per ora |
+
+Così il pannello Energia funziona come con un impianto vero: consumo della casa =
+prelievo + produzione − produzione non autoconsumata, cioè esattamente i consumi del
+contatore; vedi quanta energia arriva dal pannello, la quota autoconsumata e
+l'autosufficienza. Per il costo del prelievo usa il *Prezzo energia* o il *Prezzo medio*:
+il pannello Energia lo applica solo al prelievo, mentre sull'energia autoconsumata in
+bolletta restano comunque rete, oneri e imposte (si azzera solo il Corrispettivo Luce).
+
+> [!IMPORTANT]
+> Queste statistiche sostituiscono, dall'attivazione del pannello, il *Consumo dalla rete*
+> mensile (`plenitude:consumo_luce_<conto>`) o un tuo misuratore (es. Shelly) usato come
+> consumo dalla rete: usa **una sola** fonte, altrimenti i consumi si contano due volte.
+> I dati Plenitude arrivano con circa un giorno di ritardo; un misuratore in casa resta
+> utile come dispositivo singolo per i consumi in tempo reale.
+
+### 💶 Valore dell'energia autoconsumata
+
+Il Corrispettivo Luce di ogni giorno si prende, nell'ordine:
+
+1. dalla **bolletta** che fattura quel giorno (Corrispettivo Luce + perdite di rete +
+   sconti a consumo, diviso per i kWh): è il valore esatto;
+2. dall'opzione **Corrispettivo Luce per il pannello virtuale**, se l'hai indicata: il
+   valore "incluse le perdite di rete" delle tue condizioni economiche, meno gli sconti
+   sul corrispettivo (ad esempio Special Days o domiciliazione), IVA esclusa;
+3. dall'ultima bolletta con le **condizioni economiche in corso** (esatto per un prezzo
+   fisso, una stima per un prezzo indicizzato).
+
+Se le condizioni economiche sono appena cambiate e non c'è ancora una bolletta né
+l'opzione, il risparmio resta *sconosciuto* (non zero) finché il valore non arriva; quando
+arriva una bolletta, risparmio e statistiche si ricalcolano da soli.
+
 ## 🔗 Collegamento con MyItalgas
 
 Se scegli una **fornitura MyItalgas** nelle opzioni, a ogni aggiornamento Plenitude crea
@@ -341,6 +434,8 @@ e viene creata da sola al primo avvio.
 ## 🪶 Leggera per Home Assistant
 
 - Un aggiornamento ogni 12 ore (modificabile), con poche chiamate all'area clienti.
+- Con *Adotta un pannello*: la potenza ogni 15 minuti e i quarti d'ora dei giorni recenti
+  ogni ora; i giorni già completi non si richiedono più.
 - I PDF delle bollette si scaricano e si leggono **una volta sola**, in background, uno
   alla volta: il risultato resta in una cache su disco e dopo un riavvio non si rileggono.
 - Gli aggiornamenti non leggono mai PDF: avvio e aggiornamenti richiedono pochi secondi.

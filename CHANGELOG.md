@@ -2,6 +2,25 @@
 
 Tutte le modifiche rilevanti di Plenitude per Home Assistant.
 
+## [0.9.0] - 2026-10-27
+
+### Novità
+
+- **Adotta un pannello**: produzione del pannello virtuale, potenza in tempo reale e
+  **autoconsumo virtuale** calcolato quarto d'ora per quarto d'ora sui consumi del
+  contatore 2G, come in bolletta. **Risparmio** del mese e dall'attivazione (Corrispettivo
+  Luce azzerato sui kWh autoconsumati, IVA inclusa), con il canone del pannello e il
+  risparmio netto. Tutto parte dal primo quarto d'ora prodotto dal pannello.
+- Statistiche **orarie** del pannello per il pannello Energia: produzione, prelievo dalla
+  rete, produzione non autoconsumata, autoconsumo e risparmio.
+- Corrispettivo Luce letto dalle bollette (perdite di rete e sconti a consumo compresi);
+  per i giorni non ancora fatturati si può indicare nelle opzioni.
+
+### Correzioni
+
+- Accesso all'area clienti di nuovo funzionante: il portale ora accetta il token solo come
+  cookie, e tutte le letture (conti, bollette, consumi) fallivano con errore 401.
+
 ## [0.8.0] - 2026-10-20
 
 ### Novità

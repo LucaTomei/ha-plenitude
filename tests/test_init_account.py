@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+from freezegun.api import FrozenDateTimeFactory
 import pytest
 
 from custom_components.plenitude import bollette
@@ -213,8 +214,11 @@ async def test_ultimo_aggiornamento(hass: HomeAssistant, finto: FintoPlenitude) 
     assert stato.state not in ("unknown", "unavailable")
 
 
-async def test_diagnostica_senza_dati_personali(hass: HomeAssistant, finto: FintoPlenitude) -> None:
+async def test_diagnostica_senza_dati_personali(
+    hass: HomeAssistant, finto: FintoPlenitude, freezer: FrozenDateTimeFactory
+) -> None:
     """La diagnostica non contiene credenziali, codici, indirizzi né identificativi."""
+    freezer.move_to("2026-10-27T13:00:00+00:00")
     entry = await _avvia(hass)
     testo = json.dumps(await async_get_config_entry_diagnostics(hass, entry))
     for segreto in (
@@ -229,9 +233,13 @@ async def test_diagnostica_senza_dati_personali(hass: HomeAssistant, finto: Fint
         "IT001E00000001",
         "MAT0000000001",
         "VIA ROMA",
+        "1-PROVA01",
+        "SKU_PROVA_PAY_L",
+        "Impianto di prova",
     ):
         assert segreto not in testo, segreto
     assert '"commodity": "gas"' in testo
+    assert '"attivo_dal": "2026-10-23T22:15:00+00:00"' in testo
 
 
 async def test_scaricamento(hass: HomeAssistant, finto: FintoPlenitude) -> None:

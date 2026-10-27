@@ -4,6 +4,9 @@ L'area clienti riporta i consumi mese per mese (dall'attivazione della fornitura
 mese diventa un valore orario all'inizio del mese, con la somma progressiva. Gli ultimi
 mesi vengono reimportati a ogni aggiornamento perché il mese in corso cresce e i consumi
 stimati vengono rettificati dalle letture successive.
+
+Per le forniture con "Adotta un pannello" si importano anche statistiche orarie
+(produzione, autoconsumo virtuale, prelievo, risparmio) dall'attivazione del pannello.
 """
 
 from __future__ import annotations
@@ -15,9 +18,10 @@ from homeassistant.const import UnitOfEnergy, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
+from . import pannello
 from .account import GAS, LUCE, Conto
 from .api import oscura
-from .const import DOMAIN
+from .const import DOMAIN, IVA_AGEVOLATA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +126,105 @@ async def importa_spese(hass: HomeAssistant, conti: dict[str, Conto], uid: str) 
             )
         except Exception:
             _LOGGER.exception("Importazione della spesa %s non riuscita", oscura(statistic_id))
+
+
+# Statistiche orarie del pannello: nome nella serie -> (nome visualizzato, unità, classe).
+_SERIE_PANNELLO: dict[str, tuple[str, str, str | None]] = {
+    "produzione": ("produzione", UnitOfEnergy.KILO_WATT_HOUR, "energy"),
+    "autoconsumo": ("autoconsumo virtuale", UnitOfEnergy.KILO_WATT_HOUR, "energy"),
+    "prelievo": ("prelievo dalla rete", UnitOfEnergy.KILO_WATT_HOUR, "energy"),
+    "immissione": ("produzione non autoconsumata", UnitOfEnergy.KILO_WATT_HOUR, "energy"),
+    "risparmio": ("risparmio", "EUR", None),
+}
+
+
+def id_statistica_pannello(conto: Conto, serie: str) -> str:
+    """Identificativo di una statistica oraria del pannello di un conto luce."""
+    return f"{DOMAIN}:pannello_{serie}_{conto.codice}".lower()
+
+
+async def importa_pannello(
+    hass: HomeAssistant, conti: dict[str, Conto], prezzo_manuale: float | None
+) -> None:
+    """Importa le statistiche orarie dei pannelli dall'attivazione (se il recorder è attivo).
+
+    Produzione, autoconsumo virtuale, prelievo dalla rete, produzione non autoconsumata e
+    risparmio: nel pannello Energia la produzione va tra i pannelli solari, il prelievo
+    come consumo dalla rete e la produzione non autoconsumata come energia restituita.
+    """
+    if "recorder" not in hass.config.components:
+        return
+    for conto in conti.values():
+        if conto.pannello is None or conto.pannello.attivo_dal is None:
+            continue
+        prezzo = pannello.prezzo_pannello(conto, prezzo_manuale)
+        try:
+            serie = pannello.serie_orarie(conto.pannello, prezzo, IVA_AGEVOLATA)
+            for chiave, (nome, unita, classe) in _SERIE_PANNELLO.items():
+                if serie[chiave]:
+                    await _importa_orario(
+                        hass,
+                        id_statistica_pannello(conto, chiave),
+                        nome=f"Plenitude pannello {nome} {conto.codice}",
+                        unita=unita,
+                        classe=classe,
+                        valori=serie[chiave],
+                    )
+        except Exception:
+            _LOGGER.exception(
+                "Importazione dei dati del pannello del conto %s non riuscita",
+                oscura(conto.codice),
+            )
+
+
+async def _importa_orario(
+    hass: HomeAssistant,
+    statistic_id: str,
+    *,
+    nome: str,
+    unita: str,
+    classe: str | None,
+    valori: dict[datetime, float],
+) -> None:
+    """Importa valori orari come somma progressiva dalla prima ora.
+
+    Le somme si ricalcolano sempre dall'inizio, ma si scrivono solo dalla prima ora che
+    cambia rispetto a quanto già importato (dati arrivati in ritardo o rettificati).
+    """
+    from homeassistant.components.recorder.models import (
+        StatisticData,
+        StatisticMeanType,
+        StatisticMetaData,
+    )
+    from homeassistant.components.recorder.statistics import async_add_external_statistics
+
+    registrate = await _registrate(hass, statistic_id)
+    ore = sorted(valori)
+    if not ore:
+        return
+    # ore registrate prima della prima ora della serie (non dovrebbero esserci): la somma
+    # riparte da lì, così non torna mai indietro
+    precedenti = [inizio for inizio in registrate if inizio < ore[0]]
+    somma = registrate[max(precedenti)] if precedenti else 0.0
+    dati: list[StatisticData] = []
+    for inizio in ore:
+        somma = round(somma + valori[inizio], 6)
+        precedente = registrate.get(inizio)
+        if dati or precedente is None or abs(precedente - somma) > 1e-6:
+            dati.append(StatisticData(start=inizio, sum=somma))
+    if not dati:
+        return
+    metadati = StatisticMetaData(
+        mean_type=StatisticMeanType.NONE,
+        has_sum=True,
+        name=nome,
+        source=DOMAIN,
+        statistic_id=statistic_id,
+        unit_class=classe,
+        unit_of_measurement=unita,
+    )
+    async_add_external_statistics(hass, metadati, dati)
+    registrate.update({d["start"]: d["sum"] for d in dati})
 
 
 async def _importa_serie(

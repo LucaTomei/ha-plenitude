@@ -86,13 +86,15 @@
           "cartella_bollette": "Cartella delle bollette",
           "intervallo_ore": "Intervallo di aggiornamento",
           "config_entry_myitalgas": "Fornitura gas MyItalgas da aggiornare",
-          "conto_gas": "Conto gas Plenitude collegato a MyItalgas"
+          "conto_gas": "Conto gas Plenitude collegato a MyItalgas",
+          "prezzo_pannello": "Corrispettivo Luce per il pannello virtuale"
         },
         "data_description": {
           "cartella_bollette": "Cartella (sotto la configurazione di Home Assistant) in cui mettere le bollette PDF di Plenitude. Puoi copiarle a mano o farle depositare da un'automazione (ad esempio dall'integrazione IMAP quando arriva la mail).",
           "intervallo_ore": "Ogni quante ore aggiornare i dati.",
           "config_entry_myitalgas": "Se scegli una fornitura MyItalgas, i prezzi del gas letti dalle bollette vengono usati per creare lì i periodi tariffari.",
-          "conto_gas": "Serve solo se l'account ha più di una fornitura gas."
+          "conto_gas": "Serve solo se l'account ha più di una fornitura gas.",
+          "prezzo_pannello": "Solo per \"Adotta un pannello\". Valore di ogni kWh autoconsumato: Corrispettivo Luce della tua offerta comprese le perdite di rete e al netto degli sconti, IVA esclusa (dalle condizioni economiche). Si usa solo per i giorni non ancora fatturati; per quelli fatturati vale il valore della bolletta. Se vuoto si usa quello dell'ultima bolletta con le condizioni in corso."
         }
       }
     }
@@ -414,6 +416,141 @@
             "name": "Comunicazioni"
           }
         }
+      },
+      "pannello_potenza": {
+        "name": "Potenza pannello",
+        "state_attributes": {
+          "pannelli": {
+            "name": "Pannelli"
+          },
+          "potenza_nominale_kw": {
+            "name": "Potenza nominale (kW)"
+          },
+          "attivo_dal": {
+            "name": "Attivo dal"
+          }
+        }
+      },
+      "pannello_produzione_mese": {
+        "name": "Produzione pannello del mese",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumo (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Autoconsumo virtuale (kWh)"
+          },
+          "prelievo": {
+            "name": "Prelievo dalla rete (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Produzione non autoconsumata (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Quota della produzione autoconsumata (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumi coperti dal pannello (%)"
+          },
+          "dati_fino_al": {
+            "name": "Dati fino al"
+          }
+        }
+      },
+      "pannello_autoconsumo_mese": {
+        "name": "Autoconsumo pannello del mese",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumo (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Autoconsumo virtuale (kWh)"
+          },
+          "prelievo": {
+            "name": "Prelievo dalla rete (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Produzione non autoconsumata (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Quota della produzione autoconsumata (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumi coperti dal pannello (%)"
+          },
+          "dati_fino_al": {
+            "name": "Dati fino al"
+          }
+        }
+      },
+      "pannello_risparmio_mese": {
+        "name": "Risparmio pannello del mese",
+        "state_attributes": {
+          "autoconsumo": {
+            "name": "Autoconsumo virtuale (kWh)"
+          },
+          "canone": {
+            "name": "Canone del pannello (€)"
+          },
+          "netto": {
+            "name": "Risparmio netto (€)"
+          },
+          "prezzo_kwh": {
+            "name": "Valore di un kWh autoconsumato, IVA esclusa (€/kWh)"
+          },
+          "dati_fino_al": {
+            "name": "Dati fino al"
+          }
+        }
+      },
+      "pannello_produzione_totale": {
+        "name": "Produzione pannello totale",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumo (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Autoconsumo virtuale (kWh)"
+          },
+          "prelievo": {
+            "name": "Prelievo dalla rete (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Produzione non autoconsumata (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Quota della produzione autoconsumata (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumi coperti dal pannello (%)"
+          },
+          "dati_fino_al": {
+            "name": "Dati fino al"
+          }
+        }
+      },
+      "pannello_risparmio_totale": {
+        "name": "Risparmio pannello totale",
+        "state_attributes": {
+          "autoconsumo": {
+            "name": "Autoconsumo virtuale (kWh)"
+          },
+          "canone": {
+            "name": "Canone del pannello (€)"
+          },
+          "netto": {
+            "name": "Risparmio netto (€)"
+          },
+          "prezzo_kwh": {
+            "name": "Valore di un kWh autoconsumato, IVA esclusa (€/kWh)"
+          },
+          "dati_fino_al": {
+            "name": "Dati fino al"
+          }
+        }
+      },
+      "pannello_prezzo": {
+        "name": "Valore energia autoconsumata"
       }
     }
   },

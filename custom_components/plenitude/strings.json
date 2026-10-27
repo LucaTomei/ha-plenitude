@@ -86,13 +86,15 @@
           "cartella_bollette": "Bills folder",
           "intervallo_ore": "Update interval",
           "config_entry_myitalgas": "MyItalgas gas supply to update",
-          "conto_gas": "Plenitude gas account linked to MyItalgas"
+          "conto_gas": "Plenitude gas account linked to MyItalgas",
+          "prezzo_pannello": "Corrispettivo Luce for the virtual panel"
         },
         "data_description": {
           "cartella_bollette": "Folder (under the Home Assistant configuration) where to put the Plenitude PDF bills. Copy them by hand or have an automation drop them there (for example the IMAP integration when the e-mail arrives).",
           "intervallo_ore": "How often, in hours, to update the data.",
           "config_entry_myitalgas": "If you choose a MyItalgas supply, the gas prices read from the bills are used to create the tariff periods there.",
-          "conto_gas": "Only needed if the account has more than one gas supply."
+          "conto_gas": "Only needed if the account has more than one gas supply.",
+          "prezzo_pannello": "Only for \"Adotta un pannello\". Value of each self-consumed kWh: Corrispettivo Luce of your offer including grid losses and net of discounts, VAT excluded (from the economic conditions). Used only for days not yet billed; billed days use the value from the bill. If empty, the value of the last bill with the current conditions is used."
         }
       }
     }
@@ -414,6 +416,141 @@
             "name": "Messages"
           }
         }
+      },
+      "pannello_potenza": {
+        "name": "Panel power",
+        "state_attributes": {
+          "pannelli": {
+            "name": "Panels"
+          },
+          "potenza_nominale_kw": {
+            "name": "Rated power (kW)"
+          },
+          "attivo_dal": {
+            "name": "Active since"
+          }
+        }
+      },
+      "pannello_produzione_mese": {
+        "name": "Panel production this month",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumption (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Virtual self-consumption (kWh)"
+          },
+          "prelievo": {
+            "name": "Drawn from the grid (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Production not self-consumed (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Self-consumed share of production (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumption covered by the panel (%)"
+          },
+          "dati_fino_al": {
+            "name": "Data up to"
+          }
+        }
+      },
+      "pannello_autoconsumo_mese": {
+        "name": "Panel self-consumption this month",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumption (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Virtual self-consumption (kWh)"
+          },
+          "prelievo": {
+            "name": "Drawn from the grid (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Production not self-consumed (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Self-consumed share of production (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumption covered by the panel (%)"
+          },
+          "dati_fino_al": {
+            "name": "Data up to"
+          }
+        }
+      },
+      "pannello_risparmio_mese": {
+        "name": "Panel saving this month",
+        "state_attributes": {
+          "autoconsumo": {
+            "name": "Virtual self-consumption (kWh)"
+          },
+          "canone": {
+            "name": "Panel fee (€)"
+          },
+          "netto": {
+            "name": "Net saving (€)"
+          },
+          "prezzo_kwh": {
+            "name": "Value of a self-consumed kWh, VAT excluded (€/kWh)"
+          },
+          "dati_fino_al": {
+            "name": "Data up to"
+          }
+        }
+      },
+      "pannello_produzione_totale": {
+        "name": "Panel total production",
+        "state_attributes": {
+          "consumo": {
+            "name": "Consumption (kWh)"
+          },
+          "autoconsumo": {
+            "name": "Virtual self-consumption (kWh)"
+          },
+          "prelievo": {
+            "name": "Drawn from the grid (kWh)"
+          },
+          "non_autoconsumata": {
+            "name": "Production not self-consumed (kWh)"
+          },
+          "quota_autoconsumata": {
+            "name": "Self-consumed share of production (%)"
+          },
+          "copertura_consumi": {
+            "name": "Consumption covered by the panel (%)"
+          },
+          "dati_fino_al": {
+            "name": "Data up to"
+          }
+        }
+      },
+      "pannello_risparmio_totale": {
+        "name": "Panel total saving",
+        "state_attributes": {
+          "autoconsumo": {
+            "name": "Virtual self-consumption (kWh)"
+          },
+          "canone": {
+            "name": "Panel fee (€)"
+          },
+          "netto": {
+            "name": "Net saving (€)"
+          },
+          "prezzo_kwh": {
+            "name": "Value of a self-consumed kWh, VAT excluded (€/kWh)"
+          },
+          "dati_fino_al": {
+            "name": "Data up to"
+          }
+        }
+      },
+      "pannello_prezzo": {
+        "name": "Value of self-consumed energy"
       }
     }
   },

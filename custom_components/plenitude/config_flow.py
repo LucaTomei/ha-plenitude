@@ -54,6 +54,7 @@ from .const import (
     CONF_INTERVALLO_ORE,
     CONF_PASSWORD,
     CONF_PDR_MYITALGAS,
+    CONF_PREZZO_PANNELLO,
     CONF_REINVIA,
     CONF_SESSIONE,
     DOMAIN,
@@ -71,6 +72,7 @@ def _schema_opzioni(
     valori: dict[str, Any],
     includi_cartella: bool,
     conti_gas: list[SelectOptionDict] | None = None,
+    includi_pannello: bool = False,
 ) -> vol.Schema:
     campi: dict[Any, Any] = {}
     if includi_cartella:
@@ -108,6 +110,21 @@ def _schema_opzioni(
         ] = SelectSelector(
             SelectSelectorConfig(options=conti_gas, mode=SelectSelectorMode.DROPDOWN)
         )
+    if includi_pannello:
+        campi[
+            vol.Optional(
+                CONF_PREZZO_PANNELLO,
+                description={"suggested_value": valori.get(CONF_PREZZO_PANNELLO)},
+            )
+        ] = NumberSelector(
+            NumberSelectorConfig(
+                min=0,
+                max=2,
+                step="any",
+                mode=NumberSelectorMode.BOX,
+                unit_of_measurement="€/kWh",
+            )
+        )
     return vol.Schema(campi)
 
 
@@ -121,6 +138,8 @@ def _normalizza(user_input: dict[str, Any]) -> dict[str, Any]:
         opzioni[CONF_PDR_MYITALGAS] = user_input[CONF_PDR_MYITALGAS]
     if user_input.get(CONF_CONTO_GAS):
         opzioni[CONF_CONTO_GAS] = user_input[CONF_CONTO_GAS]
+    if user_input.get(CONF_PREZZO_PANNELLO):
+        opzioni[CONF_PREZZO_PANNELLO] = float(user_input[CONF_PREZZO_PANNELLO])
     return opzioni
 
 
@@ -360,7 +379,8 @@ class PlenitudeConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class PlenitudeOptionsFlow(OptionsFlowWithReload):
-    """Opzioni: cartella (solo per le bollette da cartella), intervallo e MyItalgas."""
+    """Opzioni: cartella (solo per le bollette da cartella), intervallo, MyItalgas e
+    Corrispettivo Luce per il pannello virtuale (solo per l'account)."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Modifica delle opzioni."""
@@ -383,6 +403,7 @@ class PlenitudeOptionsFlow(OptionsFlowWithReload):
                 dict(self.config_entry.options),
                 includi_cartella=not da_account,
                 conti_gas=self._conti_gas() if da_account else None,
+                includi_pannello=da_account,
             ),
         )
 

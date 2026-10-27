@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.storage import Store
 
 from .api import ClientPlenitude, Sessione, SorgenteCartella
@@ -17,6 +19,7 @@ from .const import (
     CONF_CARTELLA_BOLLETTE,
     CONF_SESSIONE,
     DOMAIN,
+    INTERVALLO_PANNELLO_MINUTI,
     STORAGE_VERSION,
 )
 from .coordinator import PlenitudeAccountCoordinator, PlenitudeConfigEntry, PlenitudeCoordinator
@@ -39,6 +42,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: PlenitudeConfigEntry) ->
         coordinator = await _coordinatore_cartella(hass, entry)
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+    if isinstance(coordinator, PlenitudeAccountCoordinator):
+        # produzione dei pannelli virtuali ("Adotta un pannello"), più frequente del resto
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass,
+                coordinator.async_aggiorna_pannelli,
+                timedelta(minutes=INTERVALLO_PANNELLO_MINUTI),
+                name=f"{DOMAIN} pannelli",
+                cancel_on_shutdown=True,
+            )
+        )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -91,6 +105,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: PlenitudeConfigEntry) -
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: PlenitudeConfigEntry) -> None:
-    """Alla rimozione dell'integrazione cancella la cache delle bollette lette."""
+    """Alla rimozione dell'integrazione cancella la cache delle bollette lette e dei pannelli."""
     if CONF_SESSIONE in entry.data:
         await Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}.bollette").async_remove()
+        await Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}.pannelli").async_remove()

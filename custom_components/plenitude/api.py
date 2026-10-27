@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 import asyncio
 import base64
 from dataclasses import dataclass, replace
+from datetime import date
 import hashlib
 import hmac
 import json
@@ -458,6 +459,9 @@ class ClientPlenitude:
     ) -> Any:
         """Chiamata autenticata; se il token del portale viene rifiutato lo rinnova una volta.
 
+        Il token va anche nel cookie GYSESSION: il portale lo imposta solo per le API
+        `/api/c360`, ma le altre (conti, bollette, pannelli...) accettano solo il cookie.
+
         Un rifiuto ripetuto non è trattato come credenziali scadute (quelle le segnala
         Gigya nel rinnovo del token): è un errore temporaneo del portale.
         """
@@ -468,7 +472,11 @@ class ClientPlenitude:
                 return await self._richiesta(
                     metodo,
                     percorso,
-                    intestazioni={"gysession": token, **(intestazioni or {})},
+                    intestazioni={
+                        "gysession": token,
+                        "Cookie": f"GYSESSION={token}",
+                        **(intestazioni or {}),
+                    },
                     **kwargs,
                 )
             except _NonAutorizzato as err:
@@ -528,6 +536,51 @@ class ClientPlenitude:
             "GET", f"/api/autoletture/{codice_conto}/autoletture", parametri={"filter": "last"}
         )
         return risposta if isinstance(risposta, dict) else None
+
+    async def pannelli(self, codice_conto: str, codice_fornitura: str) -> Any:
+        """Pannelli virtuali ("Adotta un pannello") di una fornitura di luce."""
+        return await self._api(
+            "GET",
+            f"/api/pannelli-services/v1/accounts/{codice_conto}/supply/{codice_fornitura}/details",
+        )
+
+    async def produzione_istantanea(
+        self, codice_conto: str, codice_fornitura: str, pannelli: list[dict[str, Any]]
+    ) -> Any:
+        """Produzione istantanea dei pannelli (solo lettura, anche se è una POST)."""
+        return await self._api(
+            "POST",
+            f"/api/pannelli-services/v1/accounts/{codice_conto}/supply/{codice_fornitura}"
+            "/instant-production",
+            intestazioni={"Accept": "application/json"},
+            corpo=pannelli,
+        )
+
+    async def produzioni_consumi(
+        self, codice_conto: str, pod: str, granularita: str, giorno: date
+    ) -> Any:
+        """Produzione dei pannelli e consumi della fornitura.
+
+        Con `QUARTER_HOURS` si ottengono i quarti d'ora del giorno indicato, con
+        `MONTHLY` i giorni del suo mese, con `YEARLY` i mesi del suo anno.
+        """
+        istante = f"{giorno.isoformat()}T00:00:00.000Z"
+        return await self._api(
+            "GET",
+            f"/api/pannelli-services/v1/accounts/{codice_conto}/pod/{pod}/productions-consumes",
+            parametri={"granularity": granularita, "start-date": istante, "end-date": istante},
+        )
+
+    async def prodotto(self, codice: str) -> Any:
+        """Scheda di un prodotto del catalogo (es. taglia e canone di un pannello).
+
+        Il catalogo vuole l'identificativo della richiesta anche nelle intestazioni.
+        """
+        return await self._api(
+            "GET",
+            f"/api/productsServices/v1.2/a1p/sku/{codice}",
+            intestazioni={"channel": "IOS", "loghash": str(uuid.uuid4())},
+        )
 
     async def pdf_bolletta(self, codice_conto: str, numero_bolletta: str) -> bytes:
         """PDF di una bolletta."""

@@ -82,6 +82,27 @@
       },
       "comunicazioni": {
         "default": "mdi:email-alert"
+      },
+      "pannello_potenza": {
+        "default": "mdi:solar-power-variant"
+      },
+      "pannello_produzione_mese": {
+        "default": "mdi:solar-power"
+      },
+      "pannello_autoconsumo_mese": {
+        "default": "mdi:home-lightning-bolt"
+      },
+      "pannello_risparmio_mese": {
+        "default": "mdi:piggy-bank"
+      },
+      "pannello_produzione_totale": {
+        "default": "mdi:solar-panel"
+      },
+      "pannello_risparmio_totale": {
+        "default": "mdi:piggy-bank-outline"
+      },
+      "pannello_prezzo": {
+        "default": "mdi:cash-check"
       }
     }
   }
