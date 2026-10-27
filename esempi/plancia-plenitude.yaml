@@ -1,0 +1,369 @@
+# Plancia di esempio per Plenitude (Home Assistant in italiano).
+#
+# Come usarla:
+#   1. Impostazioni → Plance → + Aggiungi plancia → "Nuova plancia da zero" → aprila.
+#   2. Matita (Modifica) → ⋮ → "Editor di configurazione grezza" → incolla tutto il file → Salva.
+#   3. Sostituisci CONTO_LUCE e CONTO_GAS con i codici dei tuoi conti: li trovi in
+#      Strumenti per sviluppatori → Statistiche cercando "plenitude"
+#      (es. plenitude:consumo_luce_505500000000 → CONTO_LUCE = 505500000000).
+#
+# Senza "Adotta un pannello" togli la sezione "Pannello solare"; senza gas la sezione "Gas".
+# Gli identificativi delle entità sono quelli di Home Assistant in italiano: se il tuo è in
+# un'altra lingua controllali in Impostazioni → Entità cercando "plenitude".
+
+title: Plenitude
+views:
+  - title: Plenitude
+    path: plenitude
+    icon: mdi:lightning-bolt-circle
+    type: sections
+    max_columns: 4
+    badges:
+      - type: entity
+        entity: sensor.plenitude_luce_potenza_pannello
+        name: Pannello
+        icon: mdi:solar-power-variant
+        color: amber
+        show_name: true
+      - type: entity
+        entity: sensor.plenitude_spesa_totale_ultimo_mese
+        name: Spesa del mese
+        icon: mdi:cash-multiple
+        show_name: true
+      - type: entity
+        entity: sensor.plenitude_comunicazioni_non_lette
+        name: Comunicazioni
+        icon: mdi:email-alert
+        color: red
+        show_name: true
+        visibility:
+          - condition: numeric_state
+            entity: sensor.plenitude_comunicazioni_non_lette
+            above: 0
+    sections:
+      # --- Adotta un pannello ---------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Pannello solare
+            icon: mdi:solar-power-variant
+            badges:
+              - type: entity
+                entity: sensor.plenitude_luce_valore_energia_autoconsumata
+                show_icon: true
+                icon: mdi:cash-check
+                color: green
+              - type: entity
+                entity: sensor.plenitude_luce_potenza_pannello
+                show_icon: true
+                icon: mdi:white-balance-sunny
+                color: amber
+          - type: tile
+            entity: sensor.plenitude_luce_potenza_pannello
+            name: Sta producendo
+            icon: mdi:solar-power-variant
+            color: amber
+            features_position: bottom
+            features:
+              - type: trend-graph
+                hours_to_show: 24
+            grid_options:
+              columns: 12
+          - type: tile
+            entity: sensor.plenitude_luce_produzione_pannello_del_mese
+            name: Prodotta nel mese
+            icon: mdi:solar-power
+            color: amber
+            vertical: true
+            grid_options:
+              columns: 4
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_luce_autoconsumo_pannello_del_mese
+            name: Rientrata in casa
+            icon: mdi:home-lightning-bolt
+            color: green
+            vertical: true
+            grid_options:
+              columns: 4
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_luce_risparmio_pannello_del_mese
+            name: Risparmiati
+            icon: mdi:piggy-bank
+            color: green
+            vertical: true
+            grid_options:
+              columns: 4
+              rows: 2
+          - type: markdown
+            content: |
+              {% macro n(v, d=2) %}{{ ('%.' ~ d ~ 'f') | format(v | float(0)) | replace('.', ',') }}{% endmacro %}
+              {% macro eur(v) %}{% if v in [none, 'unknown', 'unavailable'] %}—{% else %}{{ n(v) }} €{% endif %}{% endmacro %}
+              {% macro netto(v) %}{% if v is none %}—{% elif v | float(0) >= 0 %}<font color="#4caf50">**+{{ n(v) }} €**</font>{% else %}<font color="#ff9800">**{{ n(v) }} €**</font>{% endif %}{% endmacro %}
+              {% set m = 'sensor.plenitude_luce_risparmio_pannello_del_mese' %}
+              {% set t = 'sensor.plenitude_luce_risparmio_pannello_totale' %}
+              {% set pm = 'sensor.plenitude_luce_produzione_pannello_del_mese' %}
+              {% set pt = 'sensor.plenitude_luce_produzione_pannello_totale' %}
+              |  | **Questo mese** | **Dall'attivazione** |
+              |:--|--:|--:|
+              | ☀️ Prodotta | {{ n(states(pm)) }} kWh | {{ n(states(pt)) }} kWh |
+              | 🏠 Rientrata in casa | {{ n(state_attr(pm, 'autoconsumo')) }} kWh | {{ n(state_attr(pt, 'autoconsumo')) }} kWh |
+              | 🔌 Presa dalla rete | {{ n(state_attr(pm, 'prelievo')) }} kWh | {{ n(state_attr(pt, 'prelievo')) }} kWh |
+              | 💰 Risparmio | {{ eur(states(m)) }} | {{ eur(states(t)) }} |
+              | 🧾 Canone | −{{ eur(state_attr(m, 'canone')) }} | −{{ eur(state_attr(t, 'canone')) }} |
+              | **Netto** | {{ netto(state_attr(m, 'netto')) }} | {{ netto(state_attr(t, 'netto')) }} |
+
+              Il pannello copre il **{{ n(state_attr(pm, 'copertura_consumi'), 1) }}%** dei tuoi consumi e usi in casa il **{{ n(state_attr(pm, 'quota_autoconsumata'), 1) }}%** di quello che produce.
+              {% set fino = state_attr(m, 'dati_fino_al') %}{% if fino %}
+
+              <sub>🕒 Consumi del contatore fino al {{ as_timestamp(fino) | timestamp_custom('%d/%m alle %H:%M') }} · arrivano con circa un giorno di ritardo</sub>{% endif %}
+          - type: statistics-graph
+            title: Energia, giorno per giorno
+            chart_type: bar
+            period: day
+            days_to_show: 14
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:pannello_produzione_CONTO_LUCE
+                name: ☀️ Prodotta
+              - entity: plenitude:pannello_autoconsumo_CONTO_LUCE
+                name: 🏠 In casa
+              - entity: plenitude:pannello_prelievo_CONTO_LUCE
+                name: 🔌 Dalla rete
+          - type: statistics-graph
+            title: Risparmio, giorno per giorno
+            chart_type: bar
+            period: day
+            days_to_show: 14
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:pannello_risparmio_CONTO_LUCE
+                name: 💰 Risparmio
+
+      # --- Luce ----------------------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Luce
+            icon: mdi:lightning-bolt
+            badges:
+              - type: entity
+                entity: sensor.plenitude_luce_offerta
+                show_icon: true
+                icon: mdi:file-sign
+          - type: tile
+            entity: sensor.plenitude_luce_importo_ultima_bolletta
+            name: Ultima bolletta
+            icon: mdi:receipt-text
+            color: blue
+            vertical: true
+            state_content:
+              - state
+              - scadenza
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_luce_da_pagare
+            name: Da pagare
+            icon: mdi:cash-clock
+            color: red
+            vertical: true
+            state_content:
+              - state
+              - prossima_scadenza
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_luce_consumo_ultimo_mese
+            name: Consumo ultimo mese
+            icon: mdi:chart-bar
+            color: amber
+            state_content:
+              - state
+              - mese
+          - type: tile
+            entity: sensor.plenitude_luce_spesa_ultimo_mese
+            name: Spesa ultimo mese
+            icon: mdi:cash
+            color: amber
+            state_content:
+              - state
+              - mese
+          - type: tile
+            entity: sensor.plenitude_luce_prezzo_medio
+            name: Prezzo medio
+            icon: mdi:cash-multiple
+            color: teal
+          - type: tile
+            entity: sensor.plenitude_luce_prezzo_energia
+            name: Prezzo energia
+            icon: mdi:currency-eur
+            color: teal
+          - type: statistics-graph
+            title: Consumi mese per mese
+            chart_type: bar
+            period: month
+            days_to_show: 365
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:consumo_luce_CONTO_LUCE
+                name: kWh
+          - type: statistics-graph
+            title: Spesa mese per mese
+            chart_type: bar
+            period: month
+            days_to_show: 365
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:spesa_luce_CONTO_LUCE
+                name: €
+
+      # --- Gas ------------------------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Gas
+            icon: mdi:fire
+            badges:
+              - type: entity
+                entity: sensor.plenitude_gas_offerta
+                show_icon: true
+                icon: mdi:file-sign
+          - type: tile
+            entity: sensor.plenitude_gas_importo_ultima_bolletta
+            name: Ultima bolletta
+            icon: mdi:receipt-text
+            color: blue
+            vertical: true
+            state_content:
+              - state
+              - scadenza
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_gas_da_pagare
+            name: Da pagare
+            icon: mdi:cash-clock
+            color: red
+            vertical: true
+            state_content:
+              - state
+              - prossima_scadenza
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: sensor.plenitude_gas_consumo_ultimo_mese
+            name: Consumo ultimo mese
+            icon: mdi:chart-bar
+            color: deep-orange
+            state_content:
+              - state
+              - mese
+          - type: tile
+            entity: sensor.plenitude_gas_spesa_ultimo_mese
+            name: Spesa ultimo mese
+            icon: mdi:cash
+            color: deep-orange
+            state_content:
+              - state
+              - mese
+          - type: tile
+            entity: sensor.plenitude_gas_prezzo_gas
+            name: Prezzo gas
+            icon: mdi:currency-eur
+            color: teal
+            state_content:
+              - state
+              - scaglione
+          - type: tile
+            entity: sensor.plenitude_gas_lettura_contatore
+            name: Lettura contatore
+            icon: mdi:counter
+            color: grey
+            state_content:
+              - state
+              - data_lettura
+          - type: tile
+            entity: sensor.plenitude_gas_prossima_autolettura
+            name: Prossima autolettura
+            icon: mdi:calendar-edit
+            color: purple
+            grid_options:
+              columns: 12
+          - type: statistics-graph
+            title: Consumi mese per mese
+            chart_type: bar
+            period: month
+            days_to_show: 365
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:consumo_gas_CONTO_GAS
+                name: m³
+          - type: statistics-graph
+            title: Spesa mese per mese
+            chart_type: bar
+            period: month
+            days_to_show: 365
+            stat_types:
+              - change
+            entities:
+              - entity: plenitude:spesa_gas_CONTO_GAS
+                name: €
+
+      # --- Account --------------------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Account
+            icon: mdi:account-circle
+          - type: tile
+            entity: sensor.plenitude_spesa_totale_ultimo_mese
+            name: Luce + gas, ultimo mese
+            icon: mdi:cash-multiple
+            color: indigo
+            state_content:
+              - state
+              - mese
+            grid_options:
+              columns: 12
+          - type: tile
+            entity: sensor.plenitude_comunicazioni_non_lette
+            name: Comunicazioni non lette
+            icon: mdi:email-alert
+            color: red
+          - type: tile
+            entity: button.plenitude_scarica_le_bollette
+            name: Scarica le bollette
+            icon: mdi:file-download
+            color: blue
+            hide_state: true
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.plenitude_scarica_le_bollette
+          - type: calendar
+            title: Scadenze
+            initial_view: listWeek
+            entities:
+              - calendar.plenitude_scadenze
+          - type: markdown
+            content: |
+              {% set c = state_attr('sensor.plenitude_comunicazioni_non_lette', 'comunicazioni') or [] %}
+              {% if c | count == 0 %}Nessuna comunicazione.{% else %}
+              **Ultime comunicazioni**
+              {% for x in c[:5] %}
+              - {{ '📩' if not x.letta else '✉️' }} {{ x.data or '' }} · {{ x.descrizione }}
+              {% endfor %}{% endif %}
+
+              <sub>Aggiornato: {{ as_timestamp(states('sensor.plenitude_ultimo_aggiornamento'), 0) | timestamp_custom('%d/%m alle %H:%M') }}</sub>

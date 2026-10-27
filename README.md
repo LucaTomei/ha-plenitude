@@ -114,6 +114,7 @@ flowchart LR
 - [Entità](#-entità)
 - [Pannello Energia](#-pannello-energia)
 - [Adotta un pannello](#%EF%B8%8F-adotta-un-pannello)
+- [Plancia di esempio](#-plancia-di-esempio)
 - [Collegamento con MyItalgas](#-collegamento-con-myitalgas)
 - [Bollette da cartella](#-bollette-da-cartella)
 - [Come funziona l'accesso](#-come-funziona-laccesso)
@@ -395,6 +396,27 @@ Il Corrispettivo Luce di ogni giorno si prende, nell'ordine:
 Se le condizioni economiche sono appena cambiate e non c'è ancora una bolletta né
 l'opzione, il risparmio resta *sconosciuto* (non zero) finché il valore non arriva; quando
 arriva una bolletta, risparmio e statistiche si ricalcolano da soli.
+
+## 🖼️ Plancia di esempio
+
+In [`esempi/plancia-plenitude.yaml`](esempi/plancia-plenitude.yaml) c'è una plancia pronta
+da copiare e incollare, con quattro sezioni: **Pannello solare** (produzione, energia
+rientrata in casa, risparmio e netto, grafici giorno per giorno), **Luce**, **Gas**
+(bollette, da pagare, consumi e spesa mese per mese) e **Account** (spesa totale,
+comunicazioni, scadenze, pulsante per scaricare le bollette).
+
+1. **Impostazioni → Plance → + Aggiungi plancia → Nuova plancia da zero**, poi aprila.
+2. Matita → ⋮ → **Editor di configurazione grezza** → incolla il file → **Salva**.
+3. Sostituisci `CONTO_LUCE` e `CONTO_GAS` con i codici dei tuoi conti, che trovi in
+   **Strumenti per sviluppatori → Statistiche** cercando "plenitude".
+
+Senza *Adotta un pannello* togli la sezione del pannello, senza gas quella del gas. Gli
+identificativi delle entità sono quelli di Home Assistant in italiano.
+
+> [!TIP]
+> Nei grafici delle statistiche passa sopra le barre per vedere i valori: cliccando una
+> voce della legenda Home Assistant apre lo *Storico*, che non mostra le statistiche
+> esterne (`plenitude:…`) e risponde "Entità non trovata".
 
 ## 🔗 Collegamento con MyItalgas
 
